@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Field Combat">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
 <meta name="theme-color" content="#0a0a0a">
 <title>FIELD COMBAT - Capture & Conquer</title>
 <style>
@@ -125,6 +130,7 @@
   </div>
 
   <div id="topbtns">
+    <button class="topbtn" id="installBtn" style="display:none;background:#1976d2;color:#fff;border-color:#0d47a1">📲 インストール</button>
     <button class="topbtn" id="muteBtn">♪</button>
     <button class="topbtn" id="fsBtn">⛶</button>
   </div>
@@ -3282,6 +3288,33 @@ function loop(){
 loop();
 
 })();
+
+// Register service worker for installable PWA / offline play
+if ("serviceWorker" in navigator){
+  addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+  });
+}
+
+// Surface a custom install prompt on supported browsers
+let _deferredInstall = null;
+addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  _deferredInstall = e;
+  const btn = document.getElementById("installBtn");
+  if (btn){
+    btn.style.display = "inline-block";
+    btn.onclick = async () => {
+      btn.style.display = "none";
+      _deferredInstall.prompt();
+      _deferredInstall = null;
+    };
+  }
+});
+addEventListener("appinstalled", () => {
+  const btn = document.getElementById("installBtn");
+  if (btn) btn.style.display = "none";
+});
 </script>
 </body>
 </html>
