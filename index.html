@@ -452,7 +452,9 @@ function reset() {
       grenadeStock: 12,
       grenadeRegen: 0,
       invuln: 120,
-      lives: 7,
+      hp: 5,
+      maxHp: 5,
+      lives: 5,
       walkPhase: 0,
       muzzle: 0,
     },
@@ -1141,8 +1143,9 @@ function update(){
           state.score += pts;
           addExplosion(e.x, e.y, e.boardable ? 1.6 : 1);
           // chance to drop item
-          if (Math.random() < 0.35){
-            const kind = Math.random() < 0.8 ? "grenade" : "life";
+          if (Math.random() < 0.4){
+            const r = Math.random();
+            const kind = r < 0.6 ? "grenade" : (r < 0.9 ? "medkit" : "life");
             state.items.push({x:e.x, y:e.y, w:14, h:14, kind, life: 600});
           }
         }
@@ -1176,8 +1179,15 @@ function update(){
         state.score += 50;
         audio.sfxPickup();
         spawnFloater(it.x, it.y, "+3 GRENADE", "#ffd54a");
+      } else if (it.kind === "medkit"){
+        const before = p.hp;
+        p.hp = Math.min(p.maxHp, p.hp + 2);
+        state.score += 100;
+        audio.sfxPickup();
+        spawnFloater(it.x, it.y, "+" + (p.hp - before) + " HP", "#4caf50");
       } else if (it.kind === "life"){
         p.lives++;
+        p.hp = p.maxHp;
         state.score += 200;
         audio.sfxOneUp();
         spawnFloater(it.x, it.y, "1UP!", "#ff4081");
@@ -1321,6 +1331,7 @@ function hitPlayer(){
     p.invuln = 35;
     audio.sfxHit();
     addExplosion(p.x, p.y, 0.6);
+    spawnFloater(p.x, p.y-10, "-1", "#ff5252");
     if (p.vehHp <= 0){
       p.mode = "foot";
       p.invuln = 80;
@@ -1328,17 +1339,27 @@ function hitPlayer(){
     }
     return;
   }
-  p.lives--;
-  p.invuln = 90;
-  audio.sfxPlayerHit();
-  addExplosion(p.x, p.y, 1.6);
-  if (p.lives < 0){
-    state.screen = "over";
-    audio.stopBgm();
-    audio.sfxGameOver();
-  } else {
-    p.x = W/2; p.y = H - 70;
-    p.grenadeStock = Math.max(p.grenadeStock, 3);
+  // On-foot: lose 1 HP, only lose a life when HP reaches 0
+  p.hp--;
+  p.invuln = 60;
+  audio.sfxHit();
+  addExplosion(p.x, p.y, 0.5);
+  spawnFloater(p.x, p.y-10, "-1 HP", "#ff5252");
+  if (p.hp <= 0){
+    // Lose a life
+    p.lives--;
+    p.invuln = 120;
+    audio.sfxPlayerHit();
+    addExplosion(p.x, p.y, 1.8);
+    if (p.lives < 0){
+      state.screen = "over";
+      audio.stopBgm();
+      audio.sfxGameOver();
+    } else {
+      p.hp = p.maxHp;
+      p.x = W/2; p.y = H - 70;
+      p.grenadeStock = Math.max(p.grenadeStock, 5);
+    }
   }
 }
 
@@ -2245,16 +2266,25 @@ function drawItem(it){
     ctx.fillStyle = "#ffd54a";
     ctx.font = "8px monospace"; ctx.textAlign="center";
     ctx.fillText("G", it.x, it.y+3);
+  } else if (it.kind === "medkit"){
+    // White box with red cross
+    const bob = Math.sin(state.t*0.15)*1;
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    ctx.beginPath(); ctx.ellipse(it.x, it.y+6, 7, 1.5, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(it.x-6, it.y-5+bob, 12, 10);
+    ctx.fillStyle = "#bbb";
+    ctx.fillRect(it.x-6, it.y+3+bob, 12, 2);
+    ctx.fillStyle = "#e53935";
+    ctx.fillRect(it.x-1, it.y-3+bob, 2, 6);
+    ctx.fillRect(it.x-3, it.y-1+bob, 6, 2);
   } else if (it.kind === "pow"){
-    // Captured friendly waving — flag + soldier
     const bob = Math.sin(it.bob||0) * 1.5;
     drawSoldier(it.x, it.y + bob, "#3a7d3a", it.bob||0, -1);
-    // White flag
     ctx.fillStyle = "#222";
     ctx.fillRect(it.x+4, it.y-18+bob, 1, 12);
     ctx.fillStyle = "#fff";
     ctx.fillRect(it.x+5, it.y-18+bob, 7, 5);
-    // Beacon arrow
     if ((state.t/8|0)%2 === 0){
       ctx.fillStyle = "#ffeb3b";
       ctx.font = "bold 10px monospace";
@@ -2315,39 +2345,76 @@ function drawSmoke(){
   }
 }
 
+function drawHeart(cx, cy, fill, hi){
+  ctx.fillStyle = fill;
+  // 9x8 pixel-art heart
+  ctx.fillRect(cx-3, cy-2, 2, 2);
+  ctx.fillRect(cx+1, cy-2, 2, 2);
+  ctx.fillRect(cx-4, cy, 8, 2);
+  ctx.fillRect(cx-3, cy+2, 6, 1);
+  ctx.fillRect(cx-2, cy+3, 4, 1);
+  ctx.fillRect(cx-1, cy+4, 2, 1);
+  // highlight
+  ctx.fillStyle = hi;
+  ctx.fillRect(cx-3, cy-1, 1, 1);
+  ctx.fillRect(cx-4, cy+1, 1, 1);
+}
+
 function drawHUD(){
-  ctx.fillStyle = "rgba(0,0,0,0.65)";
-  ctx.fillRect(0, 0, W, 18);
+  // Top status bar (taller now to fit HP)
+  ctx.fillStyle = "rgba(0,0,0,0.7)";
+  ctx.fillRect(0, 0, W, 32);
+  // Row 1: score / stage / lives
   ctx.fillStyle = "#ffd54a";
   ctx.font = "10px monospace";
   ctx.textAlign = "left";
   ctx.fillText("SCORE " + String(state.score).padStart(6,"0"), 6, 12);
-  // grenades
-  ctx.fillStyle = "#fff";
-  ctx.fillText("G:" + state.player.grenadeStock, 110, 12);
-  if (state.allies.length > 0){
-    ctx.fillStyle = "#64b5f6";
-    ctx.fillText("味方:" + state.allies.length, 150, 12);
-  }
-  // stage
   ctx.textAlign = "center";
   ctx.fillStyle = "#9ef";
   ctx.fillText("STAGE " + state.stage, W/2, 12);
-  // mode/lives
   ctx.textAlign = "right";
   ctx.fillStyle = "#ffd54a";
-  ctx.fillText("LIFE " + Math.max(0,state.player.lives), W-6, 12);
-  if (state.player.mode !== "foot"){
+  ctx.fillText("LIFE " + Math.max(0, state.player.lives + 1), W-6, 12);
+
+  // Row 2: HP hearts on left, grenades & allies in middle, vehicle on right
+  const p = state.player;
+  // Hearts
+  for (let i = 0; i < p.maxHp; i++){
+    const hx = 8 + i*12;
+    const hy = 22;
+    if (i < p.hp){
+      drawHeart(hx, hy, "#e53935", "#ff8a80");
+    } else {
+      drawHeart(hx, hy, "#3a3a3a", "#555");
+    }
+  }
+  // Grenades & allies
+  ctx.font = "10px monospace";
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#ffd54a";
+  ctx.fillText("G:" + p.grenadeStock, 78, 27);
+  if (state.allies.length > 0){
+    ctx.fillStyle = "#64b5f6";
+    ctx.fillText("味方:" + state.allies.length, 118, 27);
+  }
+  // Vehicle bar (when piloted)
+  if (p.mode !== "foot"){
+    const vehMax = {tank:14, apc:8, mech:11, heli:9}[p.mode] || 9;
+    const w = 88;
+    ctx.fillStyle = "#000";
+    ctx.fillRect(W - w - 8, 22, w, 8);
     ctx.fillStyle = "#9ef";
+    ctx.fillRect(W - w - 8, 22, w * Math.max(0, p.vehHp / vehMax), 8);
+    ctx.fillStyle = "#fff";
     ctx.font = "9px monospace";
     ctx.textAlign = "right";
-    ctx.fillText(state.player.mode.toUpperCase()+" "+state.player.vehHp, W-6, 26);
+    ctx.fillText(p.mode.toUpperCase()+" "+p.vehHp, W-12, 28);
   }
   if (audio.isMuted()){
     ctx.fillStyle = "#ff5252";
-    ctx.font = "9px monospace";
-    ctx.textAlign = "left";
-    ctx.fillText("MUTE", 6, 26);
+    ctx.font = "8px monospace";
+    ctx.textAlign = "right";
+    ctx.fillText("MUTE", W-8, 38);
   }
 
   if (state.stageBanner > 0 && state.screen === "play"){
