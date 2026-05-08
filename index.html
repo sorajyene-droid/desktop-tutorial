@@ -449,15 +449,25 @@ function reset() {
       vehHp: 0,
       shotCd: 0,
       grenadeCd: 0,
-      grenadeStock: 8,
+      grenadeStock: 12,
       grenadeRegen: 0,
-      invuln: 90,
-      lives: 5,
+      invuln: 120,
+      lives: 7,
       walkPhase: 0,
       muzzle: 0,
     },
     bullets: [],
-    eBullets: [],
+    eBullets: (() => {
+      const arr = [];
+      const _push = arr.push.bind(arr);
+      arr.push = function(b){
+        // Global enemy-bullet slowdown for easier difficulty
+        b.vx *= 0.65;
+        b.vy *= 0.65;
+        return _push(b);
+      };
+      return arr;
+    })(),
     grenades: [],
     enemies: [],
     allies: [],          // friendly NPCs that follow and fight
@@ -507,6 +517,9 @@ function addExplosion(x,y,size=1){
 }
 function addMuzzle(x,y,ang){
   state.fx.push({ kind:"muzzle", x, y, ang, life: 4 });
+}
+function spawnFloater(x, y, text, color="#ffd54a"){
+  state.fx.push({ kind:"text", x, y, vy:-0.8, life: 60, text, c: color });
 }
 
 // ---------- Spawning ----------
@@ -750,19 +763,19 @@ function update(){
       else if (r<0.92) spawnAPC();
       else spawnMech();
     }
-    state.spawnTimer = Math.max(35, 95 - diff*8) + irand(0,25);
+    state.spawnTimer = Math.max(60, 130 - diff*8) + irand(0,30);
   }
   state.heliTimer--;
   if (!state.bossActive && state.heliTimer <= 0){
-    if (state.stage >= 2 && Math.random() < 0.4) spawnHeli(true);
+    if (state.stage >= 2 && Math.random() < 0.3) spawnHeli(true);
     else spawnHeli(false);
-    state.heliTimer = irand(380, 600);
+    state.heliTimer = irand(540, 800);
   }
-  // POW (rescuable allies) — spawn periodically
+  // POW (rescuable allies) — spawn often
   state.powTimer--;
   if (!state.bossActive && state.powTimer <= 0){
     spawnPOW();
-    state.powTimer = irand(420, 680);
+    state.powTimer = irand(280, 480);
   }
 
   // Player
@@ -919,16 +932,16 @@ function update(){
         const ang = Math.atan2(p.y-e.y, p.x-e.x);
         if (e.type === "rocket"){
           state.eBullets.push({x:e.x, y:e.y, vx:Math.cos(ang)*1.8, vy:Math.sin(ang)*1.8, w:5, h:5, kind:"rocket", smokeT:0});
-          e.shotCd = irand(160, 240);
+          e.shotCd = irand(240, 360);
         } else if (e.type === "heavy"){
           for (let i=-1;i<=1;i++){
             const a = ang + i*0.18;
             state.eBullets.push({x:e.x, y:e.y, vx:Math.cos(a)*2.4, vy:Math.sin(a)*2.4, w:3, h:3});
           }
-          e.shotCd = irand(140, 200);
+          e.shotCd = irand(220, 320);
         } else {
           state.eBullets.push({x:e.x, y:e.y, vx:Math.cos(ang)*2.2, vy:Math.sin(ang)*2.2, w:3, h:3});
-          e.shotCd = irand(120, 220);
+          e.shotCd = irand(200, 340);
         }
       }
     } else if (e.type === "tank" || e.type === "heavyTank" || e.type === "apc" || e.type === "mech"){
@@ -945,14 +958,14 @@ function update(){
               const a = ang + i*0.12;
               state.eBullets.push({x:e.x, y:e.y, vx:Math.cos(a)*2.6, vy:Math.sin(a)*2.6, w:4, h:4});
             }
-            e.shotCd = irand(80,130);
+            e.shotCd = irand(140, 200);
           } else if (e.type === "mech"){
             state.eBullets.push({x:e.x-6, y:e.y, vx:Math.cos(ang)*3, vy:Math.sin(ang)*3, w:3, h:3});
             state.eBullets.push({x:e.x+6, y:e.y, vx:Math.cos(ang)*3, vy:Math.sin(ang)*3, w:3, h:3});
-            e.shotCd = irand(40, 80);
+            e.shotCd = irand(140, 220);
           } else {
             state.eBullets.push({x:e.x, y:e.y, vx:Math.cos(ang)*2.6, vy:Math.sin(ang)*2.6, w:4, h:4});
-            e.shotCd = irand(80, 140);
+            e.shotCd = irand(140, 220);
           }
         }
       }
@@ -975,7 +988,7 @@ function update(){
           if (e.shotCd <= 0 && e.x > 0 && e.x < W){
             const ang = Math.atan2(p.y-e.y, p.x-e.x);
             state.eBullets.push({x:e.x, y:e.y+6, vx:Math.cos(ang)*3, vy:Math.sin(ang)*3, w:4, h:4});
-            e.shotCd = irand(40, 80);
+            e.shotCd = irand(140, 220);
           }
         }
       }
@@ -1128,9 +1141,9 @@ function update(){
           state.score += pts;
           addExplosion(e.x, e.y, e.boardable ? 1.6 : 1);
           // chance to drop item
-          if (Math.random() < 0.18){
-            const kind = Math.random() < 0.85 ? "grenade" : "life";
-            state.items.push({x:e.x, y:e.y, kind, life: 600});
+          if (Math.random() < 0.35){
+            const kind = Math.random() < 0.8 ? "grenade" : "life";
+            state.items.push({x:e.x, y:e.y, w:14, h:14, kind, life: 600});
           }
         }
         break;
@@ -1140,18 +1153,30 @@ function update(){
   state.bullets = state.bullets.filter(b => !b.dead);
   state.enemies = state.enemies.filter(e => e.hp > 0 && e.y < H + 30 && e.x > -50 && e.x < W+50);
 
-  // Items pickup
+  // Items pickup — generous hitbox using distance check
   for (const it of state.items){
     it.life--;
     if (it.kind === "pow"){
-      // POW walks down then stays
       if (it.y < H - 120) it.y += it.vy;
       it.bob = (it.bob||0) + 0.1;
     }
-    if (aabb(it, {x:p.x,y:p.y,w:14,h:16})){
-      if (it.kind === "grenade"){ p.grenadeStock = Math.min(8, p.grenadeStock+2); state.score += 50; audio.sfxPickup(); }
-      else if (it.kind === "life"){ p.lives++; state.score += 200; audio.sfxOneUp(); }
-      else if (it.kind === "pow"){ recruitAlly(it.x, it.y); state.score += 300; }
+    const pickupR = it.kind === "pow" ? 18 : 16;
+    if (Math.hypot(it.x - p.x, it.y - p.y) < pickupR){
+      if (it.kind === "grenade"){
+        p.grenadeStock = Math.min(8, p.grenadeStock+2);
+        state.score += 50;
+        audio.sfxPickup();
+        spawnFloater(it.x, it.y, "+2 GRENADE", "#ffd54a");
+      } else if (it.kind === "life"){
+        p.lives++;
+        state.score += 200;
+        audio.sfxOneUp();
+        spawnFloater(it.x, it.y, "1UP!", "#ff4081");
+      } else if (it.kind === "pow"){
+        recruitAlly(it.x, it.y);
+        state.score += 300;
+        spawnFloater(it.x, it.y, "JOINED!", "#64b5f6");
+      }
       it.life = 0;
     }
   }
@@ -1884,6 +1909,17 @@ function drawFX(){
       ctx.beginPath(); ctx.arc(f.x, f.y, 4, 0, Math.PI*2); ctx.fill();
       ctx.fillStyle = "#fff";
       ctx.beginPath(); ctx.arc(f.x, f.y, 2, 0, Math.PI*2); ctx.fill();
+    } else if (f.kind === "text"){
+      f.x += 0; f.y += f.vy;
+      const a = Math.min(1, f.life / 30);
+      ctx.globalAlpha = a;
+      ctx.fillStyle = "#000";
+      ctx.font = "bold 11px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(f.text, f.x+1, f.y+1);
+      ctx.fillStyle = f.c;
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.globalAlpha = 1;
     }
   }
 }
