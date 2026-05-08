@@ -2,26 +2,115 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0a">
 <title>FIELD COMBAT - Capture & Conquer</title>
 <style>
-  html, body { margin: 0; padding: 0; background: #0a0a0a; color: #eee; font-family: "Hiragino Kaku Gothic ProN", "Meiryo", monospace; }
-  body { display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 12px 0; }
+  html, body {
+    margin: 0; padding: 0; background: #0a0a0a; color: #eee;
+    font-family: "Hiragino Kaku Gothic ProN", "Meiryo", monospace;
+    overscroll-behavior: none;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
+  }
+  body { display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 6px 0; }
   h1 {
-    font-size: 18px; margin: 4px 0; letter-spacing: 4px;
+    font-size: 16px; margin: 2px 0; letter-spacing: 4px;
     color: #ffd54a; text-shadow: 0 0 8px #ff9800, 2px 2px 0 #b71c1c;
   }
   #wrap {
     position: relative;
-    padding: 6px;
+    padding: 4px;
     background: linear-gradient(180deg,#444,#111);
     border-radius: 8px;
     box-shadow: 0 8px 24px rgba(0,0,0,.7), inset 0 0 0 2px #222;
+    /* Scale canvas to fit viewport while keeping aspect ratio */
+    width: min(96vw, calc((100vh - 220px) * 0.6667));
+    aspect-ratio: 360 / 540;
+    max-width: 540px;
   }
-  canvas { display: block; image-rendering: pixelated; background: #2a6b2a; border-radius: 4px; }
-  #help { font-size: 12px; line-height: 1.7; margin: 8px 0 0; color: #bbb; max-width: 520px; text-align: center; }
+  canvas {
+    display: block; image-rendering: pixelated;
+    background: #2a6b2a; border-radius: 4px;
+    width: 100%; height: 100%;
+  }
+  #help { font-size: 12px; line-height: 1.6; margin: 6px 8px 0; color: #bbb; max-width: 540px; text-align: center; }
   kbd { background:#222; color:#ffd54a; padding:1px 6px; border-radius:3px; border:1px solid #555; font-size: 11px; margin: 0 1px; }
-  .legend { margin-top: 6px; font-size: 11px; color: #999; }
+  .legend { margin-top: 4px; font-size: 11px; color: #999; }
   .legend b { color:#9ef; }
+
+  /* On-screen touch controls */
+  #touch {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    display: none;
+    pointer-events: none;
+    z-index: 50;
+  }
+  .pad {
+    position: absolute; bottom: 16px;
+    pointer-events: auto;
+  }
+  #dpad {
+    left: 16px;
+    width: 150px; height: 150px;
+    background: radial-gradient(circle, rgba(255,255,255,0.08), rgba(255,255,255,0));
+    border-radius: 50%;
+    touch-action: none;
+  }
+  #stick {
+    position: absolute; left: 50%; top: 50%;
+    width: 64px; height: 64px;
+    margin: -32px 0 0 -32px;
+    background: rgba(255,213,74,0.6);
+    border: 2px solid #ffd54a;
+    border-radius: 50%;
+    box-shadow: 0 0 12px rgba(255,213,74,0.5);
+    transition: transform 0.05s linear;
+  }
+  #buttons {
+    right: 16px;
+    width: 170px; height: 150px;
+  }
+  .btn {
+    position: absolute;
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    color: #fff;
+    font-weight: bold;
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: auto;
+    user-select: none;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.5), inset 0 -4px 0 rgba(0,0,0,0.3);
+    border: 2px solid rgba(255,255,255,0.4);
+  }
+  .btn:active, .btn.active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.5), inset 0 -2px 0 rgba(0,0,0,0.3); }
+  #btnZ { background: #d32f2f; bottom: 0; right: 0; }
+  #btnX { background: #1976d2; bottom: 60px; right: 70px; }
+  #btnP { background: #555; bottom: 110px; right: 0;
+          width: 44px; height: 44px; font-size: 12px; }
+
+  #topbtns {
+    position: fixed; top: 8px; right: 8px; z-index: 60;
+    display: flex; gap: 6px;
+    pointer-events: auto;
+  }
+  .topbtn {
+    background: #222; color: #ffd54a; border: 1px solid #555;
+    padding: 6px 10px; border-radius: 6px; font-size: 11px;
+    cursor: pointer; font-family: inherit;
+  }
+
+  /* Show touch UI on touch devices */
+  @media (pointer: coarse), (hover: none) {
+    #touch { display: block; }
+    #help { display: none; }
+    body { padding-bottom: 180px; }
+    h1 { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -31,6 +120,20 @@
     <kbd>←→↑↓</kbd> 移動 ／ <kbd>Z</kbd> ショット ／ <kbd>X</kbd> 手榴弾 ／ <kbd>R</kbd> リスタート ／ <kbd>P</kbd> ポーズ ／ <kbd>M</kbd> ミュート
     <div class="legend">
       手榴弾で気絶させた<b>戦車・ヘリ・メカ・装甲車</b>に乗ると奪える！それぞれ性能が違うぞ。
+    </div>
+  </div>
+
+  <div id="topbtns">
+    <button class="topbtn" id="muteBtn">♪</button>
+    <button class="topbtn" id="fsBtn">⛶</button>
+  </div>
+
+  <div id="touch">
+    <div id="dpad" class="pad"><div id="stick"></div></div>
+    <div id="buttons" class="pad">
+      <div class="btn" id="btnZ">撃</div>
+      <div class="btn" id="btnX">爆</div>
+      <div class="btn" id="btnP">II</div>
     </div>
   </div>
 <script>
@@ -51,6 +154,88 @@ addEventListener("keydown", e => {
   if (["arrowup","arrowdown","arrowleft","arrowright"," "].includes(e.key.toLowerCase())) e.preventDefault();
 });
 addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
+
+// ---------- Touch / Virtual Controls ----------
+function setKey(name, down){
+  if (down){
+    if (!keys[name]) pressed[name] = true;
+    keys[name] = true;
+  } else {
+    keys[name] = false;
+  }
+}
+
+(function setupTouch(){
+  const dpad = document.getElementById("dpad");
+  const stick = document.getElementById("stick");
+  if (!dpad) return;
+
+  const dpadKeys = ["arrowleft","arrowright","arrowup","arrowdown"];
+  let dpadId = null;
+  function clearDpad(){
+    for (const k of dpadKeys) setKey(k, false);
+    stick.style.transform = "translate(0,0)";
+  }
+  function updateStick(clientX, clientY){
+    const r = dpad.getBoundingClientRect();
+    const cx = r.left + r.width/2;
+    const cy = r.top + r.height/2;
+    let dx = clientX - cx;
+    let dy = clientY - cy;
+    const max = r.width/2 - 12;
+    const d = Math.hypot(dx,dy);
+    if (d > max){ dx = dx/d*max; dy = dy/d*max; }
+    stick.style.transform = `translate(${dx}px, ${dy}px)`;
+    const dz = 14;
+    setKey("arrowleft",  dx < -dz);
+    setKey("arrowright", dx >  dz);
+    setKey("arrowup",    dy < -dz);
+    setKey("arrowdown",  dy >  dz);
+  }
+  dpad.addEventListener("touchstart", e => {
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    dpadId = t.identifier;
+    updateStick(t.clientX, t.clientY);
+  }, {passive:false});
+  dpad.addEventListener("touchmove", e => {
+    e.preventDefault();
+    for (const t of e.changedTouches){
+      if (t.identifier === dpadId){ updateStick(t.clientX, t.clientY); break; }
+    }
+  }, {passive:false});
+  function endDpad(e){
+    for (const t of e.changedTouches){
+      if (t.identifier === dpadId){ dpadId = null; clearDpad(); break; }
+    }
+  }
+  dpad.addEventListener("touchend", e => { e.preventDefault(); endDpad(e); }, {passive:false});
+  dpad.addEventListener("touchcancel", e => { e.preventDefault(); endDpad(e); }, {passive:false});
+
+  function bindBtn(id, key){
+    const el = document.getElementById(id); if (!el) return;
+    el.addEventListener("touchstart", e => { e.preventDefault(); setKey(key, true); el.classList.add("active"); }, {passive:false});
+    const up = e => { e.preventDefault(); setKey(key, false); el.classList.remove("active"); };
+    el.addEventListener("touchend", up, {passive:false});
+    el.addEventListener("touchcancel", up, {passive:false});
+    // Mouse fallback for desktop testing
+    el.addEventListener("mousedown", e => { e.preventDefault(); setKey(key, true); el.classList.add("active"); });
+    el.addEventListener("mouseup",   e => { e.preventDefault(); setKey(key, false); el.classList.remove("active"); });
+    el.addEventListener("mouseleave",e => { setKey(key, false); el.classList.remove("active"); });
+  }
+  bindBtn("btnZ", "z");
+  bindBtn("btnX", "x");
+  bindBtn("btnP", "p");
+
+  // Top buttons
+  const muteBtn = document.getElementById("muteBtn");
+  if (muteBtn) muteBtn.addEventListener("click", () => { setKey("m", true); setTimeout(()=>setKey("m",false), 50); });
+  const fsBtn = document.getElementById("fsBtn");
+  if (fsBtn) fsBtn.addEventListener("click", () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  });
+})();
 
 // ---------- Audio (Web Audio API, all procedural) ----------
 const audio = (() => {
