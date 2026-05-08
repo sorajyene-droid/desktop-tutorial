@@ -462,8 +462,8 @@ function reset() {
       const _push = arr.push.bind(arr);
       arr.push = function(b){
         // Global enemy-bullet slowdown for easier difficulty
-        b.vx *= 0.65;
-        b.vy *= 0.65;
+        b.vx *= 0.45;
+        b.vy *= 0.45;
         return _push(b);
       };
       return arr;
@@ -1648,70 +1648,184 @@ function drawRocket(e){
 
 function drawTank(e, friendly=false, stunned=false, big=false){
   const x=e.x, y=e.y;
-  ctx.fillStyle = "rgba(0,0,0,0.35)";
-  ctx.beginPath(); ctx.ellipse(x, y+12, 14, 3, 0, 0, Math.PI*2); ctx.fill();
-  const body = friendly ? "#4caf50" : (big ? "#5d4037" : "#8a6d3b");
-  const tread = "#222";
-  ctx.fillStyle = tread;
-  ctx.fillRect(x-12, y-12, 4, 24);
-  ctx.fillRect(x+8, y-12, 4, 24);
+  // Long ground shadow
+  ctx.fillStyle = "rgba(0,0,0,0.45)";
+  ctx.beginPath(); ctx.ellipse(x, y+13, 16, 3.5, 0, 0, Math.PI*2); ctx.fill();
+
+  const body = friendly ? "#43a047" : (big ? "#4e342e" : "#7d6537");
+  const bodyDark = darken(body, 0.55);
+  const bodyHi = "rgba(255,255,255,0.18)";
+  const turret = friendly ? "#2e7d32" : (big ? "#3e2723" : "#5b4520");
+
+  // Treads (left/right) — chunkier with road-wheel detail
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(x-13, y-12, 5, 24);
+  ctx.fillRect(x+8, y-12, 5, 24);
+  // tread top/bottom highlight
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x-13, y-12, 5, 1);
+  ctx.fillRect(x+8, y-12, 5, 1);
+  // rolling tread segments
   ctx.fillStyle = "#444";
-  for (let i=0;i<6;i++){
-    const yy = y - 11 + i*4 + ((state.t/4)|0)%4;
-    ctx.fillRect(x-11, yy, 2, 2);
-    ctx.fillRect(x+9, yy, 2, 2);
+  for (let i=0;i<7;i++){
+    const yy = y - 12 + i*4 + ((state.t/3)|0)%4;
+    ctx.fillRect(x-12, yy, 3, 2);
+    ctx.fillRect(x+9, yy, 3, 2);
   }
+  // Road wheels (circles inside treads)
+  ctx.fillStyle = "#2a2a2a";
+  for (let i=0;i<4;i++){
+    const yy = y - 9 + i*7;
+    ctx.beginPath(); ctx.arc(x-10, yy, 2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+10, yy, 2, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.fillStyle = "#555";
+  for (let i=0;i<4;i++){
+    const yy = y - 9 + i*7;
+    ctx.beginPath(); ctx.arc(x-10, yy, 1, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+10, yy, 1, 0, Math.PI*2); ctx.fill();
+  }
+
+  // Lower hull
   ctx.fillStyle = body;
   ctx.fillRect(x-9, y-9, 18, 18);
-  // shading
-  ctx.fillStyle = "rgba(255,255,255,0.12)";
+  // Top highlight
+  ctx.fillStyle = bodyHi;
   ctx.fillRect(x-9, y-9, 18, 2);
-  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  // Bottom shading
+  ctx.fillStyle = "rgba(0,0,0,0.32)";
   ctx.fillRect(x-9, y+6, 18, 3);
-  // turret
-  ctx.fillStyle = friendly ? "#2e7d32" : (big ? "#3e2723" : "#6b5025");
-  ctx.fillRect(x-6, y-6, 12, 12);
-  ctx.fillStyle = "rgba(255,255,255,0.18)";
-  ctx.fillRect(x-6, y-6, 12, 2);
-  // barrel
-  ctx.fillStyle = "#222";
-  ctx.fillRect(x-1, y-15, 2, 9);
-  if (big){
-    ctx.fillRect(x-2, y-15, 4, 4);
+  // Rivets along edges
+  ctx.fillStyle = bodyDark;
+  for (let i=0;i<3;i++){
+    ctx.fillRect(x-8 + i*8, y-7, 1, 1);
+    ctx.fillRect(x-8 + i*8, y+5, 1, 1);
   }
+  // Front fender
+  ctx.fillStyle = bodyDark;
+  ctx.fillRect(x-10, y+5, 20, 2);
+  // National marking (star)
+  ctx.fillStyle = friendly ? "#fff" : "#ffd54a";
+  ctx.fillRect(x-1, y+1, 2, 2);
+  ctx.fillRect(x-2, y+2, 4, 0.8);
+
+  // Turret base
+  ctx.fillStyle = turret;
+  ctx.fillRect(x-7, y-7, 14, 12);
+  ctx.fillStyle = "rgba(255,255,255,0.22)";
+  ctx.fillRect(x-7, y-7, 14, 2);
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.fillRect(x-7, y+3, 14, 2);
+  // Hatch on turret
+  ctx.fillStyle = darken(turret, 0.55);
+  ctx.fillRect(x-2, y-4, 4, 4);
+  ctx.fillStyle = "#222";
+  ctx.fillRect(x-2, y-4, 4, 1);
+
+  // Main barrel — thicker for big tank
+  if (big){
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(x-2, y-18, 4, 11);
+    ctx.fillStyle = "#333";
+    ctx.fillRect(x-3, y-18, 6, 3);  // muzzle brake
+    ctx.fillRect(x-2, y-7, 4, 2);   // breech
+  } else {
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(x-1, y-16, 2, 10);
+    ctx.fillStyle = "#333";
+    ctx.fillRect(x-2, y-16, 4, 2);
+    ctx.fillRect(x-2, y-7, 4, 2);
+  }
+  // Coaxial MG
+  ctx.fillStyle = "#222";
+  ctx.fillRect(x+3, y-7, 1, 4);
+  // Antenna
+  ctx.fillStyle = "#222";
+  ctx.fillRect(x+5, y-12, 1, 6);
+  ctx.fillStyle = "#ff5252";
+  ctx.fillRect(x+5, y-13, 1, 1);
+
   if (stunned){
     ctx.fillStyle = "#ffeb3b";
     const s = Math.sin(state.t*0.4)*2;
-    ctx.font = "10px monospace";
-    ctx.fillText("!?", x-4, y-12 + s);
+    ctx.font = "bold 11px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("!?", x, y-14 + s);
   }
 }
 
 function drawAPC(e, friendly=false, stunned=false){
   const x=e.x, y=e.y;
-  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  ctx.fillStyle = "rgba(0,0,0,0.45)";
   ctx.beginPath(); ctx.ellipse(x, y+14, 14, 3, 0, 0, Math.PI*2); ctx.fill();
-  // wheels
-  ctx.fillStyle = "#222";
+
+  const body = friendly ? "#388e3c" : "#3e4f54";
+  const dark = darken(body, 0.55);
+
+  // 6 wheels (3 each side) with rotating spoke detail
+  ctx.fillStyle = "#0a0a0a";
   for (let i=-1;i<=1;i++){
-    ctx.fillRect(x-12, y-10 + i*8, 4, 5);
-    ctx.fillRect(x+8, y-10 + i*8, 4, 5);
+    ctx.fillRect(x-12, y-9 + i*8, 5, 6);
+    ctx.fillRect(x+7, y-9 + i*8, 5, 6);
   }
-  ctx.fillStyle = friendly ? "#2e7d32" : "#455a64";
+  // wheel hubs
+  ctx.fillStyle = "#444";
+  for (let i=-1;i<=1;i++){
+    ctx.fillRect(x-11, y-7 + i*8, 3, 2);
+    ctx.fillRect(x+8, y-7 + i*8, 3, 2);
+  }
+
+  // Sloped armor body
+  ctx.fillStyle = body;
   ctx.fillRect(x-9, y-12, 18, 24);
-  ctx.fillStyle = "rgba(255,255,255,0.12)";
+  // upper sloped panel — fake bevel via highlights
+  ctx.fillStyle = "rgba(255,255,255,0.18)";
   ctx.fillRect(x-9, y-12, 18, 2);
+  ctx.fillRect(x-9, y-12, 1, 8);
   ctx.fillStyle = "rgba(0,0,0,0.3)";
-  ctx.fillRect(x-9, y+8, 18, 4);
-  // hatch / gun mount
-  ctx.fillStyle = friendly ? "#1b5e20" : "#263238";
-  ctx.fillRect(x-4, y-4, 8, 6);
+  ctx.fillRect(x-9, y+9, 18, 3);
+  ctx.fillRect(x+8, y-12, 1, 24);
+
+  // Side viewport
+  ctx.fillStyle = dark;
+  ctx.fillRect(x-8, y-2, 3, 2);
+  ctx.fillRect(x+5, y-2, 3, 2);
+
+  // Front grill
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x-7, y+10, 14, 2);
+  for (let i=0;i<5;i++){
+    ctx.fillStyle = "#444";
+    ctx.fillRect(x-6 + i*3, y+10, 1, 2);
+  }
+
+  // Roof hatch with MG turret
+  ctx.fillStyle = dark;
+  ctx.fillRect(x-4, y-6, 8, 6);
+  ctx.fillStyle = "rgba(255,255,255,0.2)";
+  ctx.fillRect(x-4, y-6, 8, 1);
+  ctx.fillStyle = darken(body, 0.7);
+  ctx.fillRect(x-3, y-3, 6, 3);
+  // MG barrel
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x-1, y-12, 2, 6);
+  ctx.fillStyle = "#444";
+  ctx.fillRect(x-2, y-12, 4, 1);
+  // Antenna
   ctx.fillStyle = "#222";
-  ctx.fillRect(x-1, y-10, 2, 6);
+  ctx.fillRect(x+5, y-10, 1, 7);
+  ctx.fillStyle = "#ff5252";
+  ctx.fillRect(x+5, y-11, 1, 1);
+  // headlight
+  ctx.fillStyle = "#ffeb3b";
+  ctx.fillRect(x-7, y+8, 2, 2);
+  ctx.fillRect(x+5, y+8, 2, 2);
+
   if (stunned){
     ctx.fillStyle = "#ffeb3b";
-    ctx.font = "10px monospace";
-    ctx.fillText("!?", x-4, y-12 + Math.sin(state.t*0.4)*2);
+    ctx.font = "bold 11px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("!?", x, y-14 + Math.sin(state.t*0.4)*2);
   }
 }
 
@@ -1719,82 +1833,206 @@ function drawMech(e, friendly=false, stunned=false){
   const x=e.x, y=e.y;
   const wp = e.walkPhase || 0;
   const lstep = Math.sin(wp)*3, rstep = Math.sin(wp+Math.PI)*3;
-  ctx.fillStyle = "rgba(0,0,0,0.35)";
-  ctx.beginPath(); ctx.ellipse(x, y+15, 13, 3, 0, 0, Math.PI*2); ctx.fill();
-  // legs
-  ctx.fillStyle = "#37474f";
-  ctx.fillRect(x-7, y+2, 4, 10 + (lstep>0?2:0));
-  ctx.fillRect(x+3, y+2, 4, 10 + (rstep>0?2:0));
-  // feet
-  ctx.fillStyle = "#222";
-  ctx.fillRect(x-9, y+12 + (lstep>0?2:0), 8, 3);
-  ctx.fillRect(x+1, y+12 + (rstep>0?2:0), 8, 3);
-  // body
-  ctx.fillStyle = friendly ? "#388e3c" : "#546e7a";
-  ctx.fillRect(x-9, y-10, 18, 14);
+
+  ctx.fillStyle = "rgba(0,0,0,0.45)";
+  ctx.beginPath(); ctx.ellipse(x, y+16, 14, 3, 0, 0, Math.PI*2); ctx.fill();
+
+  const body = friendly ? "#388e3c" : "#4d6571";
+  const dark = darken(body, 0.55);
+  const accent = friendly ? "#1b5e20" : "#263238";
+
+  // Hip pivots
+  ctx.fillStyle = accent;
+  ctx.fillRect(x-7, y+1, 4, 3);
+  ctx.fillRect(x+3, y+1, 4, 3);
+
+  // Upper legs (thigh)
+  ctx.fillStyle = body;
+  ctx.fillRect(x-7, y+3, 4, 6 + (lstep>0?2:0));
+  ctx.fillRect(x+3, y+3, 4, 6 + (rstep>0?2:0));
+  // knee joint
+  ctx.fillStyle = accent;
+  ctx.fillRect(x-7, y+8 + (lstep>0?2:0), 4, 2);
+  ctx.fillRect(x+3, y+8 + (rstep>0?2:0), 4, 2);
+  // Lower legs (shin)
+  ctx.fillStyle = dark;
+  ctx.fillRect(x-6, y+10 + (lstep>0?2:0), 2, 5);
+  ctx.fillRect(x+4, y+10 + (rstep>0?2:0), 2, 5);
+  // Feet (wide bases)
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x-9, y+14 + (lstep>0?2:0), 8, 3);
+  ctx.fillRect(x+1, y+14 + (rstep>0?2:0), 8, 3);
+  ctx.fillStyle = "#333";
+  ctx.fillRect(x-9, y+14 + (lstep>0?2:0), 8, 1);
+  ctx.fillRect(x+1, y+14 + (rstep>0?2:0), 8, 1);
+
+  // Torso (rounded shoulders)
+  ctx.fillStyle = body;
+  ctx.fillRect(x-9, y-11, 18, 14);
+  // Top highlight
+  ctx.fillStyle = "rgba(255,255,255,0.2)";
+  ctx.fillRect(x-9, y-11, 18, 3);
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.fillRect(x-9, y+0, 18, 3);
+  // Chest plate detail
+  ctx.fillStyle = darken(body, 0.4);
+  ctx.fillRect(x-5, y-7, 10, 6);
   ctx.fillStyle = "rgba(255,255,255,0.18)";
-  ctx.fillRect(x-9, y-10, 18, 3);
-  // cockpit
+  ctx.fillRect(x-5, y-7, 10, 1);
+  // Cockpit window
   ctx.fillStyle = friendly ? "#a5d6a7" : "#80deea";
-  ctx.fillRect(x-3, y-7, 6, 5);
-  // arm guns
+  ctx.fillRect(x-3, y-6, 6, 4);
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  ctx.fillRect(x-3, y-6, 6, 1);
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.fillRect(x-3, y-3, 6, 1);
+
+  // Shoulder pauldrons
+  ctx.fillStyle = darken(body, 0.5);
+  ctx.fillRect(x-11, y-10, 3, 6);
+  ctx.fillRect(x+8, y-10, 3, 6);
+  ctx.fillStyle = "rgba(255,255,255,0.22)";
+  ctx.fillRect(x-11, y-10, 3, 1);
+  ctx.fillRect(x+8, y-10, 3, 1);
+
+  // Arm guns (gatling-style)
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x-13, y-5, 4, 8);
+  ctx.fillRect(x+9, y-5, 4, 8);
+  // multi-barrels
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(x-13, y-13, 1, 8);
+  ctx.fillRect(x-11, y-13, 1, 8);
+  ctx.fillRect(x+10, y-13, 1, 8);
+  ctx.fillRect(x+12, y-13, 1, 8);
+  ctx.fillStyle = "#666";
+  ctx.fillRect(x-13, y-13, 4, 1);
+  ctx.fillRect(x+9, y-13, 4, 1);
+
+  // Antenna
   ctx.fillStyle = "#222";
-  ctx.fillRect(x-13, y-6, 4, 8);
-  ctx.fillRect(x+9, y-6, 4, 8);
-  // barrels
-  ctx.fillRect(x-12, y-12, 2, 6);
-  ctx.fillRect(x+10, y-12, 2, 6);
+  ctx.fillRect(x+0, y-13, 1, 4);
+  ctx.fillStyle = friendly ? "#9ef" : "#ff5252";
+  ctx.fillRect(x+0, y-14, 1, 1);
+
   if (stunned){
     ctx.fillStyle = "#ffeb3b";
-    ctx.font = "10px monospace";
-    ctx.fillText("!?", x-4, y-14 + Math.sin(state.t*0.4)*2);
+    ctx.font = "bold 11px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("!?", x, y-16 + Math.sin(state.t*0.4)*2);
   }
 }
 
 function drawHeli(e, friendly=false, attack=false, stunned=false){
   const x=e.x, y=e.y;
-  ctx.fillStyle = "rgba(0,0,0,0.3)";
-  ctx.beginPath(); ctx.ellipse(x, y+12, 16, 3, 0, 0, Math.PI*2); ctx.fill();
-  // body
-  ctx.fillStyle = friendly ? "#2e7d32" : (attack ? "#3e2723" : "#37474f");
-  ctx.fillRect(x-12, y-6, 22, 12);
+  ctx.fillStyle = "rgba(0,0,0,0.4)";
+  ctx.beginPath(); ctx.ellipse(x, y+13, 18, 3.5, 0, 0, Math.PI*2); ctx.fill();
+
+  const body = friendly ? "#2e7d32" : (attack ? "#3e2723" : "#37474f");
+  const dark = darken(body, 0.6);
+
+  // Tail boom
+  ctx.fillStyle = body;
+  ctx.fillRect(x+8, y-2, 14, 4);
   ctx.fillStyle = "rgba(255,255,255,0.15)";
-  ctx.fillRect(x-12, y-6, 22, 2);
-  ctx.fillStyle = "rgba(0,0,0,0.3)";
-  ctx.fillRect(x-12, y+4, 22, 2);
-  // tail
-  ctx.fillStyle = friendly ? "#2e7d32" : (attack ? "#3e2723" : "#37474f");
-  ctx.fillRect(x+8, y-2, 12, 4);
-  ctx.fillRect(x+18, y-6, 3, 8);
-  // cockpit
+  ctx.fillRect(x+8, y-2, 14, 1);
+  // Tail fin
+  ctx.fillStyle = body;
+  ctx.fillRect(x+19, y-7, 4, 9);
+  ctx.fillStyle = darken(body, 0.5);
+  ctx.fillRect(x+22, y-7, 1, 9);
+  // Tail rotor
+  ctx.fillStyle = "#1a1a1a";
+  const tailAng = (e.bladePhase||0)*2;
+  ctx.save();
+  ctx.translate(x+22, y-2);
+  ctx.rotate(tailAng);
+  ctx.fillRect(-4, -0.5, 8, 1);
+  ctx.restore();
+
+  // Main body (egg-shaped via stacked rectangles)
+  ctx.fillStyle = body;
+  ctx.fillRect(x-13, y-7, 22, 13);
+  ctx.fillRect(x-11, y-9, 18, 2);
+  ctx.fillRect(x-11, y+6, 18, 1);
+  ctx.fillStyle = "rgba(255,255,255,0.18)";
+  ctx.fillRect(x-13, y-7, 22, 2);
+  ctx.fillRect(x-11, y-9, 18, 1);
+  ctx.fillStyle = "rgba(0,0,0,0.32)";
+  ctx.fillRect(x-13, y+4, 22, 3);
+
+  // Cockpit window (rounded)
   ctx.fillStyle = "#80deea";
-  ctx.fillRect(x-11, y-4, 7, 6);
-  ctx.fillStyle = "rgba(255,255,255,0.4)";
-  ctx.fillRect(x-11, y-4, 7, 2);
-  // missiles for attack heli
+  ctx.fillRect(x-12, y-5, 8, 6);
+  ctx.fillRect(x-13, y-3, 1, 3);
+  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.fillRect(x-12, y-5, 8, 2);
+  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  ctx.fillRect(x-12, y+0, 8, 1);
+  // Window frame
+  ctx.fillStyle = dark;
+  ctx.fillRect(x-8, y-5, 1, 6);
+
+  // Engine/intake
+  ctx.fillStyle = dark;
+  ctx.fillRect(x-2, y-9, 8, 3);
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x+1, y-9, 4, 1);
+
+  // Side door / number
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 6px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText(attack ? "AH" : "UH", x-2, y+1);
+
+  // Stub wings with weapons (attack)
   if (attack){
+    ctx.fillStyle = dark;
+    ctx.fillRect(x-10, y+5, 20, 2);
+    // Rocket pods
+    ctx.fillStyle = "#5d4037";
+    ctx.fillRect(x-10, y+7, 6, 3);
+    ctx.fillRect(x+4, y+7, 6, 3);
+    ctx.fillStyle = "#1a1a1a";
+    for (let i=0;i<3;i++){
+      ctx.fillRect(x-9 + i*2, y+7, 1, 1);
+      ctx.fillRect(x+5 + i*2, y+7, 1, 1);
+    }
+    // Missiles
     ctx.fillStyle = "#b71c1c";
-    ctx.fillRect(x-8, y+6, 5, 3);
-    ctx.fillRect(x+1, y+6, 5, 3);
+    ctx.fillRect(x-2, y+7, 4, 2);
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(x+2, y+7, 1, 2);
   }
-  // skids
+
+  // Skid landing gear
   ctx.fillStyle = "#222";
-  ctx.fillRect(x-10, y+7, 18, 1);
-  // rotor
+  ctx.fillRect(x-12, y+8, 22, 1);
+  ctx.fillRect(x-10, y+7, 1, 2);
+  ctx.fillRect(x+9, y+7, 1, 2);
+
+  // Main rotor mast
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x-2, y-11, 4, 3);
+  // Rotor (spinning)
   const ang = e.bladePhase || state.t*0.4;
   ctx.save();
-  ctx.translate(x, y-8);
+  ctx.translate(x, y-9);
   ctx.rotate(ang);
-  ctx.fillStyle = "rgba(0,0,0,0.6)";
-  ctx.fillRect(-16, -1, 32, 2);
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(-18, -1, 36, 2);
+  ctx.fillStyle = "#444";
+  ctx.fillRect(-18, -1, 36, 1);
   ctx.restore();
   // rotor blur disc
-  ctx.fillStyle = "rgba(255,255,255,0.06)";
-  ctx.beginPath(); ctx.arc(x, y-8, 16, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.07)";
+  ctx.beginPath(); ctx.arc(x, y-9, 18, 0, Math.PI*2); ctx.fill();
+
   if (stunned){
     ctx.fillStyle = "#ffeb3b";
-    ctx.font = "10px monospace";
-    ctx.fillText("!?", x-4, y-12 + Math.sin(state.t*0.4)*2);
+    ctx.font = "bold 11px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("!?", x, y-14 + Math.sin(state.t*0.4)*2);
   }
 }
 
