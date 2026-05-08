@@ -122,10 +122,11 @@
   <h1>FIELD COMBAT</h1>
   <div id="wrap"><canvas id="game" width="360" height="540"></canvas></div>
   <div id="help">
-    <kbd>←→↑↓</kbd> 移動 ／ <kbd>Z</kbd> ショット ／ <kbd>X</kbd> 手榴弾 ／ <kbd>R</kbd> リスタート ／ <kbd>P</kbd> ポーズ ／ <kbd>M</kbd> ミュート
+    <kbd>←→↑↓</kbd> 移動 ／ <kbd>Z</kbd> ショット ／ <kbd>X</kbd> サポートブラスト ／ <kbd>R</kbd> リスタート ／ <kbd>P</kbd> ポーズ ／ <kbd>M</kbd> ミュート
     <div class="legend">
-      手榴弾で気絶させた<b>戦車・ヘリ・メカ・装甲車</b>に乗ると奪える！<br>
-      白旗（HELP!）の<b>味方兵</b>に触れると仲間になって一緒に戦ってくれるぞ。
+      <b>戦車・ヘリ・メカ</b>を撃ち続けると気絶（!?）する → 上に乗ると奪える！<br>
+      <b>X サポートブラスト</b>: 敵弾全消去＋自分回復＋仲間全回復＋敵車両全停止<br>
+      白旗（HELP!）の<b>味方兵</b>を仲間にして一緒に戦おう。
     </div>
   </div>
 
@@ -139,7 +140,7 @@
     <div id="dpad" class="pad"><div id="stick"></div></div>
     <div id="buttons" class="pad">
       <div class="btn" id="btnZ">撃</div>
-      <div class="btn" id="btnX">爆</div>
+      <div class="btn" id="btnX">援</div>
       <div class="btn" id="btnP">II</div>
     </div>
   </div>
@@ -595,9 +596,9 @@ function reset() {
       mode: "foot",
       vehHp: 0,
       shotCd: 0,
-      grenadeCd: 0,
-      grenadeStock: 12,
-      grenadeRegen: 0,
+      blastCd: 0,
+      blastStock: 3,
+      blastFx: 0,    // active blast effect timer
       invuln: 120,
       hp: 5,
       maxHp: 5,
@@ -617,6 +618,7 @@ function reset() {
       };
       return arr;
     })(),
+    // (legacy field kept empty)
     grenades: [],
     enemies: [],
     allies: [],          // friendly NPCs that follow and fight
@@ -807,8 +809,11 @@ function recruitAlly(x, y){
     targetX: x, targetY: y,
     walkPhase: 0,
     shotCd: 30,
-    invuln: 60,
-    hp: 2,
+    invuln: 90,
+    hp: 5,
+    maxHp: 5,
+    regenT: 0,
+    safeT: 0,    // ticks since last hit; HP regens when this is high
   });
   audio.sfxBoard();
 }
@@ -973,11 +978,8 @@ function update(){
   const p = state.player;
   if (p.invuln > 0) p.invuln--;
   if (p.muzzle > 0) p.muzzle--;
-  // grenade regen
-  if (p.grenadeStock < 5){
-    p.grenadeRegen++;
-    if (p.grenadeRegen >= 360){ p.grenadeStock++; p.grenadeRegen = 0; }
-  }
+  if (p.blastCd > 0) p.blastCd--;
+  if (p.blastFx > 0) p.blastFx--;
   let dx=0, dy=0;
   if (keys["arrowleft"]||keys["a"]) dx -= 1;
   if (keys["arrowright"]||keys["d"]) dx += 1;
@@ -1039,19 +1041,38 @@ function update(){
       p.shotCd = 8; p.muzzle = 3;
     }
   }
-  // Grenade (foot only)
-  if (p.grenadeCd > 0) p.grenadeCd--;
-  if (pressed.x && p.mode === "foot" && p.grenadeCd <= 0 && p.grenadeStock > 0){
-    let ax = Math.cos(p.dir), ay = Math.sin(p.dir);
-    if (!dx && !dy){ ax = 0; ay = -1; }
-    state.grenades.push({
-      x: p.x, y: p.y-6,
-      vx: ax*2.4, vy: ay*2.4 - 1.2,
-      life: 50, spin: 0,
-    });
-    audio.sfxGrenadeThrow();
-    p.grenadeCd = 30;
-    p.grenadeStock--;
+  // Support Blast (X) — clears bullets, heals, stuns vehicles for capture
+  if (pressed.x && p.blastCd <= 0 && p.blastStock > 0){
+    p.blastStock--;
+    p.blastCd = 30;
+    p.blastFx = 50;
+    audio.sfxExplosion(true);
+    audio.sfxBoard();
+    state.flash = Math.max(state.flash, 8);
+    // Clear all enemy bullets on screen
+    for (const b of state.eBullets) b.dead = true;
+    state.eBullets = state.eBullets.filter(b => !b.dead);
+    // Heal self +2 HP
+    p.hp = Math.min(p.maxHp, p.hp + 2);
+    spawnFloater(p.x, p.y - 14, "+2 HP", "#4caf50");
+    // Heal allies fully + grant invuln
+    for (const a of state.allies){
+      a.hp = a.maxHp || 5;
+      a.invuln = 90;
+    }
+    if (state.allies.length > 0) spawnFloater(p.x, p.y, "ALLIES HEALED", "#64b5f6");
+    // Stun ALL non-boss boardable vehicles for boarding
+    for (const e of state.enemies){
+      if (e.boardable){
+        e.stunned = Math.max(e.stunned||0, 360);
+      }
+    }
+    // Damage to boss parts (light)
+    if (state.boss){
+      for (const part of state.boss.parts){
+        if (part.hp > 0) part.hp = Math.max(0, part.hp - 1);
+      }
+    }
   }
 
   // Bullets
@@ -1068,48 +1089,6 @@ function update(){
     }
   }
   state.eBullets = state.eBullets.filter(b => b.y > -10 && b.y < H+10 && b.x > -10 && b.x < W+10);
-
-  // Grenades
-  for (const g of state.grenades){
-    g.x += g.vx;
-    g.y += g.vy;
-    g.vy += 0.08;
-    g.spin += 0.4;
-    g.life--;
-    if (g.life <= 0){
-      addExplosion(g.x, g.y, 1.4);
-      const targets = [...state.enemies];
-      if (state.boss) targets.push(state.boss);
-      for (const e of targets){
-        const d = Math.hypot(e.x-g.x, e.y-g.y);
-        if (d < 36){
-          if (e.boardable){
-            e.stunned = 260;
-            e.hp -= 1;
-          } else if (e.type === "boss"){
-            e.hp -= 2;
-          } else {
-            e.hp -= 3;
-          }
-        }
-      }
-      // Splash damage to boss sub-parts
-      if (state.boss){
-        for (const part of state.boss.parts){
-          if (part.hp <= 0) continue;
-          const wp = bossPartWorldPos(state.boss, part);
-          if (Math.hypot(wp.x-g.x, wp.y-g.y) < 40){
-            part.hp -= 4;
-            if (part.hp <= 0){
-              addExplosion(wp.x, wp.y, 1.6);
-              state.score += 800;
-            }
-          }
-        }
-      }
-    }
-  }
-  state.grenades = state.grenades.filter(g => g.life > 0);
 
   // Enemies
   for (const e of state.enemies){
@@ -1426,13 +1405,17 @@ function update(){
         if ((e.type === "tank" || e.type === "heavyTank") && e.stunned <= 0 && !bu.big){
           e.hp -= dmg*0.5;
         } else if (e.type === "boss"){
-          // Core takes reduced damage if any part is alive
           const aliveParts = e.parts.filter(p => p.hp > 0).length;
           e.hp -= dmg * (aliveParts > 0 ? 0.4 : 1.5);
         } else {
           e.hp -= dmg;
         }
         addExplosion(bu.x, bu.y, 0.4);
+        // Damage-based stun: boardable vehicles auto-stun when very low HP
+        if (e.boardable && e.hp > 0 && e.hp <= 1.5 && (e.stunned||0) < 60){
+          e.stunned = 360;
+          spawnFloater(e.x, e.y - 12, "STUN!", "#ffeb3b");
+        }
         if (e.hp <= 0 && e.type !== "boss"){
           let pts = 100;
           if (e.type==="tank") pts = 500;
@@ -1448,7 +1431,7 @@ function update(){
           // chance to drop item
           if (Math.random() < 0.4){
             const r = Math.random();
-            const kind = r < 0.6 ? "grenade" : (r < 0.9 ? "medkit" : "life");
+            const kind = r < 0.5 ? "medkit" : (r < 0.85 ? "blast" : "life");
             state.items.push({x:e.x, y:e.y, w:14, h:14, kind, life: 600});
           }
         }
@@ -1477,11 +1460,11 @@ function update(){
     }
     const pickupR = it.kind === "pow" ? 22 : 28;
     if (Math.hypot(it.x - p.x, it.y - p.y) < pickupR){
-      if (it.kind === "grenade"){
-        p.grenadeStock = Math.min(12, p.grenadeStock+3);
-        state.score += 50;
+      if (it.kind === "blast"){
+        p.blastStock = Math.min(6, p.blastStock+1);
+        state.score += 80;
         audio.sfxPickup();
-        spawnFloater(it.x, it.y, "+3 GRENADE", "#ffd54a");
+        spawnFloater(it.x, it.y, "+1 BLAST", "#ffd54a");
       } else if (it.kind === "medkit"){
         const before = p.hp;
         p.hp = Math.min(p.maxHp, p.hp + 2);
@@ -1504,16 +1487,27 @@ function update(){
   }
   state.items = state.items.filter(i => i.life > 0);
 
-  // Allies — follow player at offsets, auto-shoot at nearest enemy
+  // Allies — follow player at offsets, auto-shoot, regen when safe
   for (let i = 0; i < state.allies.length; i++){
     const a = state.allies[i];
     if (a.invuln > 0) a.invuln--;
-    // Target offset position behind/beside player
+    a.safeT++;
+    // HP regen: if not hit for 3s, slowly regen up to maxHp
+    if (a.safeT > 180 && a.hp < (a.maxHp||5)){
+      a.regenT = (a.regenT||0) + 1;
+      if (a.regenT >= 120){
+        a.hp = Math.min(a.maxHp||5, a.hp + 1);
+        a.regenT = 0;
+        spawnFloater(a.x, a.y - 14, "+1", "#4caf50");
+      }
+    } else {
+      a.regenT = 0;
+    }
+    // Target offset position
     const angle = (i - (state.allies.length-1)/2) * 0.6;
     const dist = 26 + (i%2)*8;
     a.targetX = p.x + Math.sin(angle) * dist;
     a.targetY = p.y + 22 + Math.cos(angle) * 6;
-    // Smooth chase
     const dx = a.targetX - a.x, dy = a.targetY - a.y;
     const d = Math.hypot(dx, dy);
     if (d > 1){
@@ -1524,14 +1518,22 @@ function update(){
     }
     a.x = Math.max(8, Math.min(W-8, a.x));
     a.y = Math.max(20, Math.min(H-12, a.y));
+    // Bullet-dodging: small lateral drift away from incoming enemy bullets
+    let dodgeX = 0;
+    for (const b of state.eBullets){
+      const dxb = a.x - b.x, dyb = a.y - b.y;
+      if (dyb > 0 && dyb < 50 && Math.abs(dxb) < 18){
+        dodgeX += (dxb >= 0 ? 0.5 : -0.5);
+      }
+    }
+    a.x += Math.max(-1.2, Math.min(1.2, dodgeX));
     // Auto-fire
     a.shotCd--;
     if (a.shotCd <= 0){
-      // Find nearest enemy ahead of ally
       let best = null, bestD = 9999;
       for (const e of state.enemies){
         if (e.hp <= 0) continue;
-        if (e.y > a.y) continue; // shoot upward only
+        if (e.y > a.y) continue;
         const d = Math.hypot(e.x - a.x, e.y - a.y);
         if (d < bestD){ bestD = d; best = e; }
       }
@@ -1545,16 +1547,18 @@ function update(){
           w: 3, h: 5, dmg: 1, ally: true,
         });
       }
-      a.shotCd = 28;
+      a.shotCd = 24;
     }
-    // Hit by enemy bullet?
+    // Hit by enemy bullet — long invuln
     if (a.invuln <= 0){
       for (const b of state.eBullets){
         if (aabb(b, a)){
           a.hp--;
-          a.invuln = 30;
+          a.invuln = 75;
+          a.safeT = 0;
           b.dead = true;
           addExplosion(a.x, a.y, 0.4);
+          spawnFloater(a.x, a.y-12, "-1", "#ff5252");
           break;
         }
       }
@@ -1661,7 +1665,7 @@ function hitPlayer(){
     } else {
       p.hp = p.maxHp;
       p.x = W/2; p.y = H - 70;
-      p.grenadeStock = Math.max(p.grenadeStock, 5);
+      p.blastStock = Math.max(p.blastStock, 2);
     }
   }
 }
@@ -2821,12 +2825,20 @@ function drawGrenade(g){
 }
 
 function drawItem(it){
-  if (it.kind === "grenade"){
-    ctx.fillStyle = "#3e2723";
-    ctx.beginPath(); ctx.arc(it.x, it.y, 5, 0, Math.PI*2); ctx.fill();
+  if (it.kind === "blast"){
+    // Yellow energy capsule with pulsing ring
+    const bob = Math.sin(state.t*0.15)*1;
+    const pulse = (Math.sin(state.t*0.2)+1)*0.5;
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    ctx.beginPath(); ctx.ellipse(it.x, it.y+6, 7, 1.5, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = `rgba(255,213,74,${0.3 + pulse*0.5})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(it.x, it.y+bob, 8 + pulse*2, 0, Math.PI*2); ctx.stroke();
     ctx.fillStyle = "#ffd54a";
-    ctx.font = "8px monospace"; ctx.textAlign="center";
-    ctx.fillText("G", it.x, it.y+3);
+    ctx.beginPath(); ctx.arc(it.x, it.y+bob, 5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
+    ctx.fillText("X", it.x, it.y+bob+3);
   } else if (it.kind === "medkit"){
     // White box with red cross
     const bob = Math.sin(state.t*0.15)*1;
@@ -2863,9 +2875,16 @@ function drawItem(it){
 
 function drawAlly(a){
   const blink = (a.invuln > 0 && (state.t % 6) < 3);
-  if (blink) return;
-  // green-blue tint to differentiate from player
-  drawSoldier(a.x, a.y, "#1976d2", a.walkPhase||0, -1);
+  if (!blink){
+    drawSoldier(a.x, a.y, "#1976d2", a.walkPhase||0, -1);
+  }
+  // Ally HP bar above head
+  const max = a.maxHp || 5;
+  const w = 14;
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillRect(a.x - w/2 - 1, a.y - 16, w + 2, 3);
+  ctx.fillStyle = a.hp > max*0.5 ? "#4caf50" : (a.hp > max*0.25 ? "#ffeb3b" : "#ff5252");
+  ctx.fillRect(a.x - w/2, a.y - 15, w * (a.hp / max), 1);
 }
 
 function drawFX(){
@@ -2953,7 +2972,7 @@ function drawHUD(){
   ctx.font = "10px monospace";
   ctx.textAlign = "left";
   ctx.fillStyle = "#ffd54a";
-  ctx.fillText("G:" + p.grenadeStock, 78, 27);
+  ctx.fillText("BLAST:" + p.blastStock, 78, 27);
   if (state.allies.length > 0){
     ctx.fillStyle = "#64b5f6";
     ctx.fillText("味方:" + state.allies.length, 118, 27);
@@ -3210,7 +3229,18 @@ function render(){
   drawSmoke();
 
   for (const it of state.items) drawItem(it);
-  for (const g of state.grenades) drawGrenade(g);
+  // Support Blast effect (expanding ring)
+  if (state.player.blastFx > 0){
+    const t = 50 - state.player.blastFx;
+    const r = t * 8;
+    const a = state.player.blastFx / 50;
+    ctx.strokeStyle = `rgba(255,213,74,${a})`;
+    ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.arc(state.player.x, state.player.y, r, 0, Math.PI*2); ctx.stroke();
+    ctx.strokeStyle = `rgba(255,255,255,${a*0.7})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(state.player.x, state.player.y, r*0.7, 0, Math.PI*2); ctx.stroke();
+  }
 
   for (const e of state.enemies){
     switch(e.type){
