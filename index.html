@@ -394,7 +394,7 @@ const audio = (() => {
         "K","H","H","S","K","H","O","S",  "K","H","S","H","K","S","K","O",
       ],
     },
-    3: { // Final stage — E phrygian, ominous power
+    3: { // Stage 3 — E phrygian, ominous
       tempo: 110,
       bass: [
         "E2","E2",_,"E2","B2",_,"E2",_,  "E2","E2","E3","E2","B2",_,"D3",_,
@@ -411,6 +411,63 @@ const audio = (() => {
       drum: [
         "K",_,"S","H","K","H","S","K",  "K","H","S","H","K","K","S","O",
         "K",_,"S","H","K","H","S","K",  "K","S","K","S","O","O","S","O",
+      ],
+    },
+    4: { // Stage 4 — Arctic, B minor cold and crisp
+      tempo: 116,
+      bass: [
+        "B2",_,"F#3",_,"B2",_,"F#3",_,  "G2",_,"D3",_,"G2",_,"D3",_,
+        "E2",_,"B2",_,"E2",_,"B2",_,    "F#2",_,"C#3",_,"F#2","F#2","E3","F#3",
+      ],
+      lead: [
+        "B4","D5","F#5","B5","A5","F#5","D5","B4",  "G4","B4","D5","G5","F#5","D5","B4","D5",
+        "E5","G5","B5","E6","D6","B5","G5","E5",    "F#5","A5","C#6","F#6","E6","C#6","A5","F#5",
+      ],
+      harm: [
+        "F#4",_,_,_,"B4",_,"D5",_,  "D4",_,_,_,"G4",_,"B4",_,
+        "B3",_,_,_,"E4",_,"G4",_,   "C#5",_,_,_,"F#5",_,"A5",_,
+      ],
+      drum: [
+        "K","H","S","H","K","H","S","H",  "K","H","S","H","K","K","S","O",
+        "K","H","S","H","K","H","S","H",  "K","S","K","S","K","H","S","O",
+      ],
+    },
+    5: { // Stage 5 — Volcanic, C# minor heavy and aggressive
+      tempo: 144,
+      bass: [
+        "C#2","C#2","C#3","C#2","G#2","C#3","C#2",_,  "C#2","C#2","C#3",_,"G#2",_,"B2",_,
+        "A2","A2","A3","A2","E3","A3","A2",_,         "B2","B2","F#3","B2","A2","B2","C#3","B2",
+      ],
+      lead: [
+        "C#5","E5","G#5","C#6","B5","G#5","E5","C#5",  "C#5","G#5","B5","E6","D#6","B5","G#5","E5",
+        "A5","C#6","E6","A6","G#6","E6","C#6","A5",    "B5","D6","F#6","B6","A6","F#6","D6","B5",
+      ],
+      harm: [
+        "G#4",_,_,_,"C#5",_,"E5",_,  "E5",_,_,_,"G#5",_,"B5",_,
+        "E5",_,_,_,"A5",_,"C#6",_,   "F#5",_,_,_,"B5",_,"D6",_,
+      ],
+      drum: [
+        "K","K","S","H","K","H","S","K",  "K","H","S","H","K","K","S","O",
+        "K","K","S","H","K","H","S","K",  "K","S","K","S","O","O","S","O",
+      ],
+    },
+    6: { // Stage 6 — Final boss, A minor / D minor epic
+      tempo: 128,
+      bass: [
+        "A2","A2","E3","A2","D3","A2","E3","A2",  "F2","F2","C3","F2","G2","F2","C3","F2",
+        "D2","D2","A2","D2","E3","D2","A2","D2",  "E2","E2","B2","E2","A2","B2","C3","E3",
+      ],
+      lead: [
+        "A4","E5","A5","C6","B5","A5","E5","C5",  "F5","A5","C6","F6","E6","C6","A5","F5",
+        "D5","F5","A5","D6","C6","A5","F5","D5",  "E5","G5","B5","E6","A6","E6","B5","G5",
+      ],
+      harm: [
+        "E4",_,_,_,"A4",_,"C5","E5",  "C5",_,_,_,"F5",_,"A5","C5",
+        "A4",_,_,_,"D5",_,"F5","A5",  "B4",_,_,_,"E5",_,"A5","E5",
+      ],
+      drum: [
+        "K","H","S","H","K","K","S","H",  "K","H","S","H","K","K","S","O",
+        "K","H","S","H","K","K","S","H",  "K","S","K","S","O","O","S","O",
       ],
     },
   };
@@ -749,16 +806,58 @@ function recruitAlly(x, y){
   });
   audio.sfxBoard();
 }
+// Boss archetype config (1..6) — each has distinct visuals + attacks
+const BOSS_ARCHETYPES = {
+  1: { name:"WAR FORTRESS",   sizeMul: 1.0, shape:"fortress", w:140, h:110,
+       parts: [
+         { name:"L_TURRET", ox:-0.42, oy: 0.05, hpMax: 6, shotCd: 120, w: 26, h: 22 },
+         { name:"R_TURRET", ox: 0.42, oy: 0.05, hpMax: 6, shotCd: 150, w: 26, h: 22 },
+         { name:"TOP_GUN",  ox: 0.0,  oy:-0.32, hpMax: 4, shotCd: 90,  w: 22, h: 18 },
+       ] },
+  2: { name:"SAND CRAB",      sizeMul: 1.1, shape:"crab", w:160, h:90,
+       parts: [
+         { name:"L_CLAW", ox:-0.55, oy: 0.10, hpMax: 8, shotCd: 90, w: 36, h: 28 },
+         { name:"R_CLAW", ox: 0.55, oy: 0.10, hpMax: 8, shotCd: 110, w: 36, h: 28 },
+       ] },
+  3: { name:"SKY CARRIER",    sizeMul: 1.2, shape:"carrier", w:200, h:80,
+       parts: [
+         { name:"L_POD", ox:-0.40, oy: 0.10, hpMax: 5, shotCd: 70, w: 22, h: 18 },
+         { name:"R_POD", ox: 0.40, oy: 0.10, hpMax: 5, shotCd: 70, w: 22, h: 18 },
+         { name:"BAY",   ox: 0.00, oy: 0.20, hpMax: 6, shotCd: 140, w: 40, h: 18 },
+       ] },
+  4: { name:"GLACIER WALKER", sizeMul: 1.3, shape:"walker", w:170, h:130,
+       parts: [
+         { name:"L_GUN", ox:-0.40, oy:-0.10, hpMax: 7, shotCd: 60, w: 24, h: 22 },
+         { name:"R_GUN", ox: 0.40, oy:-0.10, hpMax: 7, shotCd: 60, w: 24, h: 22 },
+         { name:"CHEST", ox: 0.00, oy: 0.05, hpMax: 8, shotCd: 110, w: 36, h: 28 },
+       ] },
+  5: { name:"INFERNO TRAIN",  sizeMul: 1.4, shape:"train", w:230, h:90,
+       parts: [
+         { name:"FRONT_GUN", ox:-0.35, oy:-0.20, hpMax: 6, shotCd: 80, w: 24, h: 22 },
+         { name:"MID_GUN",   ox: 0.00, oy:-0.20, hpMax: 6, shotCd: 100, w: 24, h: 22 },
+         { name:"REAR_GUN",  ox: 0.35, oy:-0.20, hpMax: 6, shotCd: 120, w: 24, h: 22 },
+       ] },
+  6: { name:"OMEGA OVERLORD", sizeMul: 1.6, shape:"overlord", w:200, h:160,
+       parts: [
+         { name:"L_BLADE", ox:-0.45, oy: 0.05, hpMax: 9, shotCd: 80, w: 24, h: 30 },
+         { name:"R_BLADE", ox: 0.45, oy: 0.05, hpMax: 9, shotCd: 80, w: 24, h: 30 },
+         { name:"L_SHOULD",ox:-0.30, oy:-0.32, hpMax: 6, shotCd: 100, w: 22, h: 18 },
+         { name:"R_SHOULD",ox: 0.30, oy:-0.32, hpMax: 6, shotCd: 100, w: 22, h: 18 },
+       ] },
+};
+
 function spawnBoss(){
-  // Boss size grows by stage. Final stage = huge mega-boss.
   const stage = state.stage;
-  const sizeMul = stage === 1 ? 1.0 : stage === 2 ? 1.3 : 1.7;
-  const w = Math.floor(140 * sizeMul);
-  const h = Math.floor(110 * sizeMul);
-  const baseHp = 25 + (stage-1) * 20;
+  const proto = BOSS_ARCHETYPES[stage] || BOSS_ARCHETYPES[6];
+  const sizeMul = proto.sizeMul;
+  const w = Math.floor(proto.w);
+  const h = Math.floor(proto.h);
+  const baseHp = 25 + (stage-1) * 18;
   state.boss = {
     type:"boss",
-    name: stage === 1 ? "WAR FORTRESS" : stage === 2 ? "DESERT KRAKEN" : "OMEGA LEVIATHAN",
+    archetype: stage,
+    shape: proto.shape,
+    name: proto.name,
     x: W/2, y: -h,
     w, h,
     sizeMul,
@@ -768,12 +867,12 @@ function spawnBoss(){
     shotCd: 90,
     moveT: 0,
     phase: 0,
-    // Destructible sub-parts (turrets) — relative offsets, scaled later
-    parts: [
-      { name:"L_TURRET", ox:-0.42, oy: 0.05, hp: 6, max: 6, shotCd: 120, w: 26*sizeMul, h: 22*sizeMul },
-      { name:"R_TURRET", ox: 0.42, oy: 0.05, hp: 6, max: 6, shotCd: 150, w: 26*sizeMul, h: 22*sizeMul },
-      { name:"TOP_GUN",  ox: 0.0,  oy:-0.32, hp: 4, max: 4, shotCd: 90, w: 22*sizeMul, h: 18*sizeMul },
-    ],
+    parts: proto.parts.map(p => ({
+      name: p.name, ox: p.ox, oy: p.oy,
+      hp: p.hpMax, max: p.hpMax,
+      shotCd: p.shotCd,
+      w: p.w * sizeMul, h: p.h * sizeMul,
+    })),
     introT: 0,
   };
   state.bossActive = true;
@@ -1102,44 +1201,158 @@ function update(){
       // slight bobbing for menace
       b.y = b.targetY + Math.sin(b.moveT*0.04) * 4;
     }
-    // Core fires
+    // Core fires — pattern depends on boss archetype
     b.shotCd--;
     const phase = b.hp < b.maxHp*0.5 ? 1 : 0;
+    const arche = b.archetype || 1;
     if (b.shotCd <= 0 && b.y >= b.targetY - 4){
-      if (phase === 0){
-        // wide arc
-        for (let i=0;i<7;i++){
-          const a = Math.PI/2 + (i-3)*0.16;
-          state.eBullets.push({x:b.x, y:b.y+b.h*0.3, vx:Math.cos(a)*2.6, vy:Math.sin(a)*2.6, w:4, h:4});
+      const ang = Math.atan2(p.y-b.y, p.x-b.x);
+      switch (arche){
+        case 1: { // FORTRESS — wide arc / enraged spread+rocket
+          if (phase === 0){
+            for (let i=0;i<7;i++){
+              const a = Math.PI/2 + (i-3)*0.16;
+              state.eBullets.push({x:b.x, y:b.y+b.h*0.3, vx:Math.cos(a)*2.6, vy:Math.sin(a)*2.6, w:4, h:4});
+            }
+            b.shotCd = 60;
+          } else {
+            for (let i=-3;i<=3;i++){
+              const a = ang + i*0.12;
+              state.eBullets.push({x:b.x, y:b.y+b.h*0.3, vx:Math.cos(a)*3, vy:Math.sin(a)*3, w:4, h:4});
+            }
+            state.eBullets.push({x:b.x, y:b.y+b.h*0.3, vx:Math.cos(ang)*1.6, vy:Math.sin(ang)*1.6, w:6, h:6, kind:"rocket", smokeT:0});
+            b.shotCd = 45;
+          }
+          break;
         }
-        b.shotCd = 60;
-      } else {
-        // ENRAGE: aimed cluster + rocket
-        const ang = Math.atan2(p.y-b.y, p.x-b.x);
-        for (let i=-3;i<=3;i++){
-          const a = ang + i*0.12;
-          state.eBullets.push({x:b.x, y:b.y+b.h*0.3, vx:Math.cos(a)*3, vy:Math.sin(a)*3, w:4, h:4});
+        case 2: { // SAND CRAB — radial barrage from body
+          const n = phase ? 12 : 8;
+          for (let i=0;i<n;i++){
+            const a = (i / n) * Math.PI * 2 + b.moveT*0.01;
+            state.eBullets.push({x:b.x, y:b.y, vx:Math.cos(a)*2.2, vy:Math.sin(a)*2.2, w:4, h:4});
+          }
+          b.shotCd = phase ? 50 : 80;
+          break;
         }
-        state.eBullets.push({x:b.x, y:b.y+b.h*0.3, vx:Math.cos(ang)*1.6, vy:Math.sin(ang)*1.6, w:6, h:6, kind:"rocket", smokeT:0});
-        b.shotCd = 45;
+        case 3: { // SKY CARRIER — bomb drops + paratroopers
+          for (let i=-2;i<=2;i++){
+            state.eBullets.push({x:b.x + i*30, y:b.y+b.h*0.4, vx:0, vy:3, w:6, h:6, kind:"rocket", smokeT:0});
+          }
+          // Drop a paratrooper
+          if (b.moveT % 80 < 5){ spawnPara(b.x + rand(-50, 50), b.y + b.h*0.3); }
+          b.shotCd = phase ? 40 : 70;
+          break;
+        }
+        case 4: { // GLACIER WALKER — stomping shockwaves (radial rings)
+          if (phase === 0){
+            for (let i=0;i<10;i++){
+              const a = (i/10)*Math.PI*2;
+              state.eBullets.push({x:b.x, y:b.y+b.h*0.4, vx:Math.cos(a)*2.0, vy:Math.sin(a)*2.0, w:5, h:5});
+            }
+            b.shotCd = 90;
+          } else {
+            for (let r=0;r<2;r++){
+              for (let i=0;i<14;i++){
+                const a = (i/14)*Math.PI*2 + r*0.22;
+                state.eBullets.push({x:b.x, y:b.y+b.h*0.4, vx:Math.cos(a)*(2.0+r*0.6), vy:Math.sin(a)*(2.0+r*0.6), w:5, h:5});
+              }
+            }
+            b.shotCd = 80;
+          }
+          state.shake = Math.max(state.shake, 6);
+          break;
+        }
+        case 5: { // INFERNO TRAIN — heavy single artillery + side spread
+          state.eBullets.push({x:b.x, y:b.y+b.h*0.3, vx:Math.cos(ang)*1.4, vy:Math.sin(ang)*1.4, w:8, h:8, kind:"rocket", smokeT:0});
+          for (let i=-2;i<=2;i++){
+            const a = Math.PI/2 + i*0.22;
+            state.eBullets.push({x:b.x, y:b.y+b.h*0.3, vx:Math.cos(a)*2.4, vy:Math.sin(a)*2.4, w:4, h:4});
+          }
+          b.shotCd = phase ? 35 : 55;
+          break;
+        }
+        case 6: { // OMEGA OVERLORD — multi-layer attacks
+          // Spiral
+          for (let i=0;i<6;i++){
+            const a = Math.PI/2 + (i-2.5)*0.18 + Math.sin(b.moveT*0.05);
+            state.eBullets.push({x:b.x, y:b.y+b.h*0.3, vx:Math.cos(a)*2.8, vy:Math.sin(a)*2.8, w:4, h:4});
+          }
+          // Aimed homing-ish twin
+          for (let s of [-1, 1]){
+            const a = ang + s*0.05;
+            state.eBullets.push({x:b.x + s*40, y:b.y, vx:Math.cos(a)*3, vy:Math.sin(a)*3, w:5, h:5});
+          }
+          // Phase 2: extra heavy rocket every other shot
+          if (phase && (b.moveT % 60 < 5)){
+            state.eBullets.push({x:b.x, y:b.y+b.h*0.3, vx:Math.cos(ang)*1.4, vy:Math.sin(ang)*1.4, w:8, h:8, kind:"rocket", smokeT:0});
+          }
+          b.shotCd = phase ? 30 : 50;
+          break;
+        }
       }
     }
-    // Sub-turrets fire independently
+    // Sub-turrets fire independently — pattern by part name suffix
     for (const part of b.parts){
       if (part.hp <= 0) continue;
       part.shotCd--;
       if (part.shotCd <= 0){
         const wp = bossPartWorldPos(b, part);
         const ang = Math.atan2(p.y - wp.y, p.x - wp.x);
+        const yOff = wp.h/2;
         if (part.name === "TOP_GUN"){
-          // rapid stream
-          state.eBullets.push({x:wp.x, y:wp.y+wp.h/2, vx:Math.cos(ang)*3.2, vy:Math.sin(ang)*3.2, w:3, h:3});
-          part.shotCd = 22;
+          state.eBullets.push({x:wp.x, y:wp.y+yOff, vx:Math.cos(ang)*3.2, vy:Math.sin(ang)*3.2, w:3, h:3});
+          part.shotCd = 24;
+        } else if (part.name === "L_CLAW" || part.name === "R_CLAW"){
+          // Pincer: 5-way claw fan
+          for (let i=-2;i<=2;i++){
+            const a = ang + i*0.13;
+            state.eBullets.push({x:wp.x, y:wp.y+yOff, vx:Math.cos(a)*2.4, vy:Math.sin(a)*2.4, w:4, h:4});
+          }
+          part.shotCd = 110;
+        } else if (part.name === "L_POD" || part.name === "R_POD"){
+          // Carrier pods: rapid AA stream
+          state.eBullets.push({x:wp.x, y:wp.y+yOff, vx:Math.cos(ang)*3, vy:Math.sin(ang)*3, w:3, h:3});
+          state.eBullets.push({x:wp.x, y:wp.y+yOff, vx:Math.cos(ang+0.1)*3, vy:Math.sin(ang+0.1)*3, w:3, h:3});
+          part.shotCd = 16;
+        } else if (part.name === "BAY"){
+          // Bomb drop
+          for (let i=-1;i<=1;i++){
+            state.eBullets.push({x:wp.x + i*14, y:wp.y, vx:0, vy:3, w:6, h:6, kind:"rocket", smokeT:0});
+          }
+          part.shotCd = 90;
+        } else if (part.name === "L_GUN" || part.name === "R_GUN"){
+          // Walker arm gatling
+          for (let i=0;i<3;i++){
+            state.eBullets.push({x:wp.x + irand(-3,3), y:wp.y+yOff, vx:Math.cos(ang)*3.2, vy:Math.sin(ang)*3.2, w:3, h:3});
+          }
+          part.shotCd = 28;
+        } else if (part.name === "CHEST"){
+          // Walker chest beam (line of bullets)
+          for (let i=0;i<5;i++){
+            state.eBullets.push({x:wp.x, y:wp.y+yOff + i*4, vx:Math.cos(ang)*3.5, vy:Math.sin(ang)*3.5, w:5, h:5});
+          }
+          part.shotCd = 140;
+        } else if (part.name === "FRONT_GUN" || part.name === "MID_GUN" || part.name === "REAR_GUN"){
+          // Train turret fan
+          for (let i=-1;i<=1;i++){
+            const a = ang + i*0.14;
+            state.eBullets.push({x:wp.x, y:wp.y+yOff, vx:Math.cos(a)*2.6, vy:Math.sin(a)*2.6, w:4, h:4});
+          }
+          part.shotCd = 70;
+        } else if (part.name === "L_BLADE" || part.name === "R_BLADE"){
+          // Overlord blades: side sweeps
+          state.eBullets.push({x:wp.x, y:wp.y+yOff, vx:Math.cos(ang)*3.5, vy:Math.sin(ang)*3.5, w:5, h:5});
+          state.eBullets.push({x:wp.x, y:wp.y+yOff, vx:Math.cos(ang+0.2)*3, vy:Math.sin(ang+0.2)*3, w:4, h:4});
+          part.shotCd = 40;
+        } else if (part.name === "L_SHOULD" || part.name === "R_SHOULD"){
+          // Overlord shoulders: heavy rockets
+          state.eBullets.push({x:wp.x, y:wp.y+yOff, vx:Math.cos(ang)*1.6, vy:Math.sin(ang)*1.6, w:6, h:6, kind:"rocket", smokeT:0});
+          part.shotCd = 90;
         } else {
-          // 3-way
+          // Generic 3-way
           for (let i=-1;i<=1;i++){
             const a = ang + i*0.18;
-            state.eBullets.push({x:wp.x, y:wp.y+wp.h/2, vx:Math.cos(a)*2.4, vy:Math.sin(a)*2.4, w:4, h:4});
+            state.eBullets.push({x:wp.x, y:wp.y+yOff, vx:Math.cos(a)*2.4, vy:Math.sin(a)*2.4, w:4, h:4});
           }
           part.shotCd = 90 + irand(-15,15);
         }
@@ -1165,7 +1378,7 @@ function update(){
       state.stage++;
       state.stageTimer = 0;
       state.stageBanner = 180;
-      if (state.stage > 3){
+      if (state.stage > 6){
         state.screen = "clear";
         audio.stopBgm();
       } else {
@@ -1449,10 +1662,22 @@ function hitPlayer(){
 
 // ---------- Render ----------
 function tileColor(stage){
-  // background base color per stage
-  if (stage === 1) return ["#2a6b2a","#327f32","#1c4f1c"];
-  if (stage === 2) return ["#7a6437","#8b7345","#594824"]; // desert-ish
-  return ["#3a3f55","#4a4f6b","#1f2233"]; // night/military base
+  // [base, stripe, bush]
+  if (stage === 1) return ["#2a6b2a","#327f32","#1c4f1c"];           // grass
+  if (stage === 2) return ["#7a6437","#8b7345","#594824"];           // desert
+  if (stage === 3) return ["#3a3f55","#4a4f6b","#1f2233"];           // night base
+  if (stage === 4) return ["#b8c8d8","#cfdde8","#7a8b97"];           // arctic snow
+  if (stage === 5) return ["#3a1a14","#5a2618","#7a1a05"];           // volcanic
+  return ["#1a1530","#2a2050","#0a0a20"];                            // final sky
+}
+// Special accents per stage (water/sand band, fire pools, etc.)
+function stageAccent(stage){
+  if (stage === 1) return { kind:"river" };
+  if (stage === 2) return { kind:"sand" };
+  if (stage === 3) return { kind:"river" };
+  if (stage === 4) return { kind:"ice" };
+  if (stage === 5) return { kind:"lava" };
+  return { kind:"void" };
 }
 
 function drawBackground(){
@@ -1467,13 +1692,12 @@ function drawBackground(){
     ctx.fillRect(0, y, W, 16);
   }
 
-  // river patches (stage 1 & 3) — horizontal river bands at intervals
-  ctx.fillStyle = state.stage === 2 ? "#c2a06a" : "#1976d2";
+  // Stage-specific environmental bands
+  const accent = stageAccent(state.stage).kind;
   const riverEvery = 360;
   const baseOff = (state.scroll * 0.6) % riverEvery;
   for (let yy = -baseOff; yy < H + 80; yy += riverEvery){
-    if (state.stage === 2){
-      // sand band
+    if (accent === "sand"){
       ctx.fillStyle = "#c2a06a";
       ctx.fillRect(0, yy, W, 50);
       ctx.fillStyle = "#a98449";
@@ -1481,22 +1705,79 @@ function drawBackground(){
         const xx = ((i*53 + Math.floor(yy))%W);
         ctx.fillRect(xx, yy+rand(2,46), 6, 2);
       }
-    } else {
+    } else if (accent === "river"){
       ctx.fillStyle = "#1976d2";
       ctx.fillRect(0, yy, W, 36);
-      // ripples
       ctx.fillStyle = "#64b5f6";
       for (let i=0;i<W;i+=12){
         const ph = Math.sin((i+state.t*2)*0.1)*2;
         ctx.fillRect(i, yy+8+ph, 6, 2);
         ctx.fillRect(i+3, yy+22+ph, 5, 2);
       }
-      // bridge over river
       ctx.fillStyle = "#6d4c41";
       ctx.fillRect(W/2-32, yy-2, 64, 40);
       ctx.fillStyle = "#4e342e";
       for (let bx = -2; bx < 64; bx += 8){
         ctx.fillRect(W/2-32+bx, yy-2, 2, 40);
+      }
+    } else if (accent === "ice"){
+      // Frozen lake
+      ctx.fillStyle = "#9ec5dc";
+      ctx.fillRect(0, yy, W, 44);
+      // cracks
+      ctx.strokeStyle = "#7aa3bb";
+      ctx.lineWidth = 1;
+      for (let i=0;i<5;i++){
+        const seed = (Math.floor(yy/10)*7 + i*53) % 100 / 100;
+        ctx.beginPath();
+        ctx.moveTo(seed*W, yy+10);
+        ctx.lineTo(seed*W + 30, yy+20);
+        ctx.lineTo(seed*W + 10, yy+34);
+        ctx.stroke();
+      }
+      // snowdrifts on shore
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, yy-2, W, 2);
+      ctx.fillRect(0, yy+44, W, 2);
+      // bridge planks (still on road)
+      ctx.fillStyle = "#3e2723";
+      ctx.fillRect(W/2-32, yy-2, 64, 48);
+      ctx.fillStyle = "#1c1c1c";
+      for (let bx = -2; bx < 64; bx += 8){
+        ctx.fillRect(W/2-32+bx, yy-2, 2, 48);
+      }
+    } else if (accent === "lava"){
+      // Lava channel
+      ctx.fillStyle = "#bf360c";
+      ctx.fillRect(0, yy, W, 40);
+      ctx.fillStyle = "#ff6f00";
+      for (let i=0;i<W;i+=10){
+        const ph = Math.sin((i+state.t*3)*0.12)*3;
+        ctx.fillRect(i, yy+10+ph, 6, 4);
+        ctx.fillRect(i+3, yy+24+ph, 5, 3);
+      }
+      ctx.fillStyle = "#ffeb3b";
+      for (let i=0;i<W;i+=18){
+        if ((i + Math.floor(yy)) % 27 === 0){
+          ctx.fillRect(i, yy+18 + (state.t%6 - 3), 2, 2);
+        }
+      }
+      // basalt bridge
+      ctx.fillStyle = "#1a1a1a";
+      ctx.fillRect(W/2-32, yy-4, 64, 48);
+      ctx.fillStyle = "#3e2723";
+      for (let bx = 0; bx < 64; bx += 8){
+        ctx.fillRect(W/2-32+bx, yy-4, 2, 48);
+      }
+    } else if (accent === "void"){
+      // Sky platform — energy band with stars
+      ctx.fillStyle = "rgba(80,40,160,0.5)";
+      ctx.fillRect(0, yy, W, 50);
+      ctx.fillStyle = "#ce93d8";
+      for (let i=0;i<W;i+=12){
+        ctx.fillRect(i, yy+8, 1, 1);
+        ctx.fillRect(i+5, yy+24, 1, 1);
+        ctx.fillRect(i+9, yy+40, 1, 1);
       }
     }
   }
@@ -2162,22 +2443,19 @@ function drawPara(e){
   drawSoldier(x, y, "#c0392b", e.walkPhase||0, 1);
 }
 
-function drawBoss(){
-  const b = state.boss; if (!b) return;
-  const x=b.x, y=b.y;
-  const w=b.w, h=b.h;
-  const enraged = b.hp < b.maxHp * 0.5;
-  const palette = state.stage === 1
-    ? { hull:"#5d4037", deck:"#3e2723", hi:"#8d6e63", core:enraged?"#ff1744":"#ffd54a" }
-    : state.stage === 2
-    ? { hull:"#6d4c41", deck:"#4e342e", hi:"#a1887f", core:enraged?"#ff1744":"#ff9800" }
-    : { hull:"#37474f", deck:"#1c2025", hi:"#607d8b", core:enraged?"#ff1744":"#00e5ff" };
+function bossPalette(b, enraged){
+  const stage = b.archetype || state.stage;
+  if (stage === 1) return { hull:"#5d4037", deck:"#3e2723", hi:"#8d6e63", core:enraged?"#ff1744":"#ffd54a" };
+  if (stage === 2) return { hull:"#a1622a", deck:"#7a3f12", hi:"#d49a5a", core:enraged?"#ff1744":"#ff9800" };
+  if (stage === 3) return { hull:"#37474f", deck:"#1c2025", hi:"#607d8b", core:enraged?"#ff1744":"#00e5ff" };
+  if (stage === 4) return { hull:"#90a4ae", deck:"#455a64", hi:"#cfd8dc", core:enraged?"#ff1744":"#80deea" };
+  if (stage === 5) return { hull:"#3e2723", deck:"#1a0a08", hi:"#bf360c", core:enraged?"#ff1744":"#ff6f00" };
+  return { hull:"#311b92", deck:"#1a0a4a", hi:"#7c4dff", core:enraged?"#ff1744":"#e040fb" };
+}
 
-  // BIG shadow
-  ctx.fillStyle = "rgba(0,0,0,0.5)";
-  ctx.beginPath(); ctx.ellipse(x, y+h/2+8, w*0.55, 8, 0, 0, Math.PI*2); ctx.fill();
-
-  // Side treads — span entire body height
+function drawBossFortress(b, pal, enraged){
+  const x=b.x, y=b.y, w=b.w, h=b.h;
+  // Treads
   ctx.fillStyle = "#1a1a1a";
   ctx.fillRect(x - w/2 - 6, y - h/2, 8, h);
   ctx.fillRect(x + w/2 - 2, y - h/2, 8, h);
@@ -2187,37 +2465,232 @@ function drawBoss(){
     ctx.fillRect(x - w/2 - 5, yy, 6, 3);
     ctx.fillRect(x + w/2 - 1, yy, 6, 3);
   }
-  // Lower hull
-  ctx.fillStyle = palette.hull;
-  ctx.fillRect(x - w/2, y - h/2, w, h);
-  // Top highlight
-  ctx.fillStyle = "rgba(255,255,255,0.13)";
-  ctx.fillRect(x - w/2, y - h/2, w, 5);
-  // Bottom shading
-  ctx.fillStyle = "rgba(0,0,0,0.3)";
-  ctx.fillRect(x - w/2, y + h/2 - 6, w, 6);
-  // Armored panels (rivets)
-  ctx.fillStyle = palette.hi;
-  for (let px=-Math.floor(w/2)+8; px<w/2-6; px+=18){
-    for (let py=-Math.floor(h/2)+8; py<h/2-6; py+=22){
-      ctx.fillRect(x+px, y+py, 2, 2);
-    }
-  }
-  // Deck plate
-  ctx.fillStyle = palette.deck;
-  ctx.fillRect(x - w*0.42, y - h*0.2, w*0.84, h*0.5);
-  ctx.fillStyle = "rgba(255,255,255,0.1)";
-  ctx.fillRect(x - w*0.42, y - h*0.2, w*0.84, 3);
+  ctx.fillStyle = pal.hull; ctx.fillRect(x - w/2, y - h/2, w, h);
+  ctx.fillStyle = "rgba(255,255,255,0.13)"; ctx.fillRect(x - w/2, y - h/2, w, 5);
+  ctx.fillStyle = "rgba(0,0,0,0.3)";        ctx.fillRect(x - w/2, y + h/2 - 6, w, 6);
+  ctx.fillStyle = pal.hi;
+  for (let px=-Math.floor(w/2)+8; px<w/2-6; px+=18)
+    for (let py=-Math.floor(h/2)+8; py<h/2-6; py+=22) ctx.fillRect(x+px, y+py, 2, 2);
+  ctx.fillStyle = pal.deck; ctx.fillRect(x - w*0.42, y - h*0.2, w*0.84, h*0.5);
+  ctx.fillStyle = "rgba(255,255,255,0.1)"; ctx.fillRect(x - w*0.42, y - h*0.2, w*0.84, 3);
+}
 
-  // Spikes / antennae for stage 3
-  if (state.stage === 3){
-    ctx.fillStyle = "#222";
-    for (let i=-2;i<=2;i++){
-      ctx.fillRect(x + i*w*0.18 - 1, y - h/2 - 8, 2, 8);
-    }
+function drawBossCrab(b, pal, enraged){
+  const x=b.x, y=b.y, w=b.w, h=b.h;
+  // Body — round carapace
+  ctx.fillStyle = pal.hull;
+  ctx.beginPath(); ctx.ellipse(x, y, w*0.4, h*0.55, 0, 0, Math.PI*2); ctx.fill();
+  // Carapace shell pattern
+  ctx.fillStyle = pal.deck;
+  ctx.beginPath(); ctx.ellipse(x, y-h*0.05, w*0.32, h*0.4, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.18)";
+  ctx.beginPath(); ctx.ellipse(x, y-h*0.18, w*0.3, h*0.18, 0, 0, Math.PI*2); ctx.fill();
+  // Eye stalks (2)
+  for (const sx of [-1, 1]){
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(x + sx*w*0.18 - 1, y - h*0.45, 2, 12);
+    ctx.fillStyle = pal.core;
+    ctx.beginPath(); ctx.arc(x + sx*w*0.18, y - h*0.5, 5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.arc(x + sx*w*0.18 - 1, y - h*0.52, 1.5, 0, Math.PI*2); ctx.fill();
+  }
+  // Mandibles (mouth)
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(x-8, y+h*0.2, 16, 6);
+  ctx.fillStyle = "#444";
+  for (let i=0;i<5;i++) ctx.fillRect(x-7 + i*4, y+h*0.2, 2, 6);
+  // Spikes around shell
+  ctx.fillStyle = pal.deck;
+  for (let a=0; a<6; a++){
+    const ang = Math.PI + (a/5)*Math.PI;
+    const sx = x + Math.cos(ang)*w*0.4;
+    const sy = y + Math.sin(ang)*h*0.55;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.cos(ang)*8, sy + Math.sin(ang)*8);
+    ctx.lineTo(sx + Math.cos(ang+0.4)*4, sy + Math.sin(ang+0.4)*4); ctx.closePath(); ctx.fill();
+  }
+}
+
+function drawBossCarrier(b, pal, enraged){
+  const x=b.x, y=b.y, w=b.w, h=b.h;
+  // Bottom shadow / hull belly
+  ctx.fillStyle = pal.deck;
+  ctx.beginPath();
+  ctx.moveTo(x - w/2, y - h*0.2);
+  ctx.lineTo(x - w/2 - 10, y);
+  ctx.lineTo(x - w/2, y + h/2);
+  ctx.lineTo(x + w/2, y + h/2);
+  ctx.lineTo(x + w/2 + 10, y);
+  ctx.lineTo(x + w/2, y - h*0.2);
+  ctx.closePath(); ctx.fill();
+  // Flight deck
+  ctx.fillStyle = pal.hull;
+  ctx.fillRect(x - w/2, y - h/2, w, h*0.4);
+  ctx.fillStyle = "rgba(255,255,255,0.18)";
+  ctx.fillRect(x - w/2, y - h/2, w, 3);
+  // Runway markings
+  ctx.fillStyle = "#ffeb3b";
+  for (let i=-2;i<=2;i++){
+    ctx.fillRect(x + i*w*0.15 - 6, y - h*0.32, 12, 2);
+  }
+  // Bridge tower
+  ctx.fillStyle = pal.deck;
+  ctx.fillRect(x + w*0.1, y - h*0.5, 24, 16);
+  ctx.fillStyle = pal.hi;
+  ctx.fillRect(x + w*0.1, y - h*0.5, 24, 3);
+  // Window strip
+  ctx.fillStyle = "#80deea";
+  ctx.fillRect(x + w*0.1 + 2, y - h*0.45, 20, 3);
+  // Side weapons / engines
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x - w/2 + 4, y, 12, 8);
+  ctx.fillRect(x + w/2 - 16, y, 12, 8);
+  // Underside bay opening (where the BAY part will be)
+  ctx.fillStyle = "#000";
+  ctx.fillRect(x - w*0.18, y + h*0.08, w*0.36, h*0.12);
+}
+
+function drawBossWalker(b, pal, enraged){
+  const x=b.x, y=b.y, w=b.w, h=b.h;
+  const wp = b.moveT*0.04;
+  const lstep = Math.sin(wp)*4, rstep = Math.sin(wp+Math.PI)*4;
+  // Legs
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x - w*0.30, y + h*0.05, 12, h*0.4 + (lstep>0?6:0));
+  ctx.fillRect(x + w*0.18, y + h*0.05, 12, h*0.4 + (rstep>0?6:0));
+  // Knee joint
+  ctx.fillStyle = pal.deck;
+  ctx.fillRect(x - w*0.30, y + h*0.30 + (lstep>0?3:0), 12, 6);
+  ctx.fillRect(x + w*0.18, y + h*0.30 + (rstep>0?3:0), 12, 6);
+  // Feet
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(x - w*0.34, y + h*0.45 + (lstep>0?6:0), 20, 6);
+  ctx.fillRect(x + w*0.14, y + h*0.45 + (rstep>0?6:0), 20, 6);
+  // Hip
+  ctx.fillStyle = pal.deck;
+  ctx.fillRect(x - w*0.36, y + h*0.0, w*0.72, 12);
+  // Torso
+  ctx.fillStyle = pal.hull;
+  ctx.fillRect(x - w*0.42, y - h*0.4, w*0.84, h*0.5);
+  ctx.fillStyle = "rgba(255,255,255,0.18)";
+  ctx.fillRect(x - w*0.42, y - h*0.4, w*0.84, 4);
+  // Shoulder stripes
+  ctx.fillStyle = pal.deck;
+  ctx.fillRect(x - w*0.42, y - h*0.15, w*0.84, 6);
+  // Cockpit visor
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(x - w*0.18, y - h*0.32, w*0.36, h*0.1);
+  ctx.fillStyle = pal.core;
+  for (let i=0;i<5;i++) ctx.fillRect(x - w*0.16 + i*w*0.08, y - h*0.30, w*0.04, 3);
+  // Antenna
+  ctx.fillStyle = "#222";
+  ctx.fillRect(x - 1, y - h*0.5, 2, 10);
+  ctx.fillStyle = "#ff5252";
+  ctx.fillRect(x - 1, y - h*0.5 - 2, 2, 2);
+}
+
+function drawBossTrain(b, pal, enraged){
+  const x=b.x, y=b.y, w=b.w, h=b.h;
+  // Three connected cars
+  for (let i=-1;i<=1;i++){
+    const cx = x + i*w*0.32;
+    ctx.fillStyle = pal.hull;
+    ctx.fillRect(cx - w*0.15, y - h*0.25, w*0.3, h*0.5);
+    ctx.fillStyle = "rgba(255,255,255,0.13)";
+    ctx.fillRect(cx - w*0.15, y - h*0.25, w*0.3, 3);
+    ctx.fillStyle = "rgba(0,0,0,0.32)";
+    ctx.fillRect(cx - w*0.15, y + h*0.20, w*0.3, 4);
+    // window strip
+    ctx.fillStyle = pal.core;
+    for (let j=0;j<5;j++) ctx.fillRect(cx - w*0.13 + j*w*0.06, y - h*0.05, w*0.04, 4);
+  }
+  // Couplings
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x - w*0.20, y - 3, w*0.06, 6);
+  ctx.fillRect(x + w*0.14, y - 3, w*0.06, 6);
+  // Rails / wheels along bottom
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(x - w/2, y + h*0.30, w, 4);
+  ctx.fillStyle = "#444";
+  for (let i=0;i<10;i++){
+    ctx.fillRect(x - w/2 + i*(w/10) + ((state.t/3)|0)%6, y + h*0.30, 4, 4);
+  }
+  // Smokestack on front (left)
+  ctx.fillStyle = pal.deck;
+  ctx.fillRect(x - w*0.46, y - h*0.42, 8, 14);
+  // Smoke
+  if (state.t % 6 === 0){
+    state.smoke.push({x: x - w*0.42, y: y - h*0.45, vx:rand(-0.4,0.4), vy:-0.6, life:60, r:5});
+  }
+  // Headlight
+  ctx.fillStyle = "#ffeb3b";
+  ctx.fillRect(x - w/2 - 6, y - h*0.2, 4, 6);
+}
+
+function drawBossOverlord(b, pal, enraged){
+  const x=b.x, y=b.y, w=b.w, h=b.h;
+  // Cape / wings
+  ctx.fillStyle = "rgba(40,0,80,0.6)";
+  ctx.beginPath();
+  ctx.moveTo(x - w*0.55, y - h*0.2);
+  ctx.lineTo(x - w*0.7, y + h*0.5);
+  ctx.lineTo(x + w*0.7, y + h*0.5);
+  ctx.lineTo(x + w*0.55, y - h*0.2);
+  ctx.closePath(); ctx.fill();
+  // Torso
+  ctx.fillStyle = pal.hull;
+  ctx.fillRect(x - w*0.30, y - h*0.4, w*0.6, h*0.6);
+  ctx.fillStyle = "rgba(255,255,255,0.18)";
+  ctx.fillRect(x - w*0.30, y - h*0.4, w*0.6, 4);
+  // Chest plate gem
+  ctx.fillStyle = pal.deck;
+  ctx.fillRect(x - w*0.18, y - h*0.18, w*0.36, h*0.32);
+  ctx.fillStyle = pal.core;
+  ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#fff";
+  ctx.beginPath(); ctx.arc(x-2, y-2, 3, 0, Math.PI*2); ctx.fill();
+  // Helm
+  ctx.fillStyle = pal.deck;
+  ctx.fillRect(x - w*0.16, y - h*0.5, w*0.32, h*0.14);
+  ctx.fillStyle = pal.hi;
+  ctx.fillRect(x - w*0.16, y - h*0.5, w*0.32, 3);
+  // Glowing eye visor
+  ctx.fillStyle = pal.core;
+  ctx.fillRect(x - w*0.13, y - h*0.42, w*0.26, 3);
+  // Horns
+  ctx.fillStyle = "#1a1a1a";
+  ctx.beginPath(); ctx.moveTo(x - w*0.16, y - h*0.5); ctx.lineTo(x - w*0.28, y - h*0.62); ctx.lineTo(x - w*0.10, y - h*0.5); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x + w*0.16, y - h*0.5); ctx.lineTo(x + w*0.28, y - h*0.62); ctx.lineTo(x + w*0.10, y - h*0.5); ctx.closePath(); ctx.fill();
+  // Belt
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x - w*0.32, y + h*0.15, w*0.64, 4);
+  ctx.fillStyle = pal.core;
+  ctx.fillRect(x - 2, y + h*0.16, 4, 2);
+}
+
+function drawBoss(){
+  const b = state.boss; if (!b) return;
+  const x=b.x, y=b.y;
+  const w=b.w, h=b.h;
+  const enraged = b.hp < b.maxHp * 0.5;
+  const palette = bossPalette(b, enraged);
+
+  // Big shadow under all boss types
+  ctx.fillStyle = "rgba(0,0,0,0.5)";
+  ctx.beginPath(); ctx.ellipse(x, y+h/2+8, w*0.55, 8, 0, 0, Math.PI*2); ctx.fill();
+
+  // Dispatch by shape
+  switch (b.shape){
+    case "crab":     drawBossCrab(b, palette, enraged); break;
+    case "carrier":  drawBossCarrier(b, palette, enraged); break;
+    case "walker":   drawBossWalker(b, palette, enraged); break;
+    case "train":    drawBossTrain(b, palette, enraged); break;
+    case "overlord": drawBossOverlord(b, palette, enraged); break;
+    default:         drawBossFortress(b, palette, enraged);
   }
 
-  // Sub-turrets (parts)
+  // Sub-turrets (parts) — common across shapes
+  const pal = palette;
   for (const part of b.parts){
     const wp = bossPartWorldPos(b, part);
     const px=wp.x, py=wp.y;
@@ -2264,27 +2737,25 @@ function drawBoss(){
     }
   }
 
-  // CORE EYE (in center)
-  const coreR = Math.max(8, w*0.07);
-  ctx.fillStyle = "#000";
-  ctx.beginPath(); ctx.arc(x, y, coreR+3, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = palette.core;
-  ctx.beginPath(); ctx.arc(x, y, coreR, 0, Math.PI*2); ctx.fill();
-  // pulse
-  const pulse = (Math.sin(state.t*0.15)+1)*0.5;
-  ctx.fillStyle = `rgba(255,255,255,${0.25 + pulse*0.5})`;
-  ctx.beginPath(); ctx.arc(x - coreR*0.3, y - coreR*0.3, coreR*0.45, 0, Math.PI*2); ctx.fill();
-  // angry eyebrow when enraged
-  if (enraged){
+  // CORE EYE — only shapes that have a "central core" overlay
+  if (b.shape === "fortress" || !b.shape){
+    const coreR = Math.max(8, w*0.07);
     ctx.fillStyle = "#000";
-    ctx.fillRect(x - coreR, y - coreR - 4, coreR*2, 3);
+    ctx.beginPath(); ctx.arc(x, y, coreR+3, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = palette.core;
+    ctx.beginPath(); ctx.arc(x, y, coreR, 0, Math.PI*2); ctx.fill();
+    const pulse = (Math.sin(state.t*0.15)+1)*0.5;
+    ctx.fillStyle = `rgba(255,255,255,${0.25 + pulse*0.5})`;
+    ctx.beginPath(); ctx.arc(x - coreR*0.3, y - coreR*0.3, coreR*0.45, 0, Math.PI*2); ctx.fill();
+    if (enraged){
+      ctx.fillStyle = "#000";
+      ctx.fillRect(x - coreR, y - coreR - 4, coreR*2, 3);
+    }
+    ctx.fillStyle = "#111";
+    ctx.fillRect(x-4, y + h*0.3, 8, h*0.25);
+    ctx.fillStyle = "#333";
+    ctx.fillRect(x-5, y + h*0.3, 10, 4);
   }
-
-  // Bottom big cannon
-  ctx.fillStyle = "#111";
-  ctx.fillRect(x-4, y + h*0.3, 8, h*0.25);
-  ctx.fillStyle = "#333";
-  ctx.fillRect(x-5, y + h*0.3, 10, 4);
 
   // Boss name banner during intro
   if (b.introT < 150){
