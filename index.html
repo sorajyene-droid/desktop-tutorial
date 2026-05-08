@@ -28,7 +28,7 @@
   <h1>FIELD COMBAT</h1>
   <div id="wrap"><canvas id="game" width="360" height="540"></canvas></div>
   <div id="help">
-    <kbd>←→↑↓</kbd> 移動 ／ <kbd>Z</kbd> ショット ／ <kbd>X</kbd> 手榴弾 ／ <kbd>R</kbd> リスタート ／ <kbd>P</kbd> ポーズ
+    <kbd>←→↑↓</kbd> 移動 ／ <kbd>Z</kbd> ショット ／ <kbd>X</kbd> 手榴弾 ／ <kbd>R</kbd> リスタート ／ <kbd>P</kbd> ポーズ ／ <kbd>M</kbd> ミュート
     <div class="legend">
       手榴弾で気絶させた<b>戦車・ヘリ・メカ・装甲車</b>に乗ると奪える！それぞれ性能が違うぞ。
     </div>
@@ -51,6 +51,197 @@ addEventListener("keydown", e => {
   if (["arrowup","arrowdown","arrowleft","arrowright"," "].includes(e.key.toLowerCase())) e.preventDefault();
 });
 addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
+
+// ---------- Audio (Web Audio API, all procedural) ----------
+const audio = (() => {
+  let actx = null;
+  let master = null;
+  let muted = false;
+  let bgmTimer = null;
+  let bgmStep = 0;
+  let bgmTempo = 130; // ms per 16th note
+  let bgmStage = 1;
+
+  function ensure(){
+    if (actx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    actx = new AC();
+    master = actx.createGain();
+    master.gain.value = 0.35;
+    master.connect(actx.destination);
+  }
+  function resume(){
+    ensure();
+    if (actx && actx.state === "suspended") actx.resume();
+  }
+
+  function tone({freq=440, type="square", dur=0.1, vol=0.3, attack=0.005, release=0.05, sweep=0, pan=0}){
+    if (!actx || muted) return;
+    const t = actx.currentTime;
+    const o = actx.createOscillator();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    if (sweep) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + sweep), t + dur);
+    const g = actx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + attack);
+    g.gain.linearRampToValueAtTime(0, t + dur + release);
+    o.connect(g).connect(master);
+    o.start(t);
+    o.stop(t + dur + release + 0.02);
+  }
+
+  function noiseBurst({dur=0.15, vol=0.4, freq=2000, q=1, sweep=-1500}){
+    if (!actx || muted) return;
+    const t = actx.currentTime;
+    const len = Math.floor(actx.sampleRate * dur);
+    const buf = actx.createBuffer(1, len, actx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i=0;i<len;i++) d[i] = (Math.random()*2-1) * (1 - i/len);
+    const src = actx.createBufferSource();
+    src.buffer = buf;
+    const f = actx.createBiquadFilter();
+    f.type = "bandpass";
+    f.frequency.setValueAtTime(freq, t);
+    if (sweep) f.frequency.exponentialRampToValueAtTime(Math.max(80, freq + sweep), t + dur);
+    f.Q.value = q;
+    const g = actx.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.linearRampToValueAtTime(0, t + dur);
+    src.connect(f).connect(g).connect(master);
+    src.start(t);
+    src.stop(t + dur + 0.02);
+  }
+
+  // SFX
+  function sfxShoot(){
+    tone({freq:880, type:"square", dur:0.04, vol:0.15, sweep:-400, release:0.02});
+  }
+  function sfxTankShot(){
+    tone({freq:200, type:"sawtooth", dur:0.1, vol:0.25, sweep:-120});
+    noiseBurst({dur:0.12, vol:0.3, freq:800, sweep:-600});
+  }
+  function sfxGrenadeThrow(){
+    tone({freq:300, type:"sine", dur:0.1, vol:0.18, sweep:200});
+  }
+  function sfxExplosion(big=false){
+    noiseBurst({dur:big?0.45:0.22, vol:big?0.55:0.4, freq:big?900:1500, q:0.7, sweep:-1200});
+    tone({freq:big?80:120, type:"sawtooth", dur:big?0.35:0.18, vol:0.3, sweep:-50});
+  }
+  function sfxEnemyShoot(){
+    tone({freq:440, type:"square", dur:0.05, vol:0.08, sweep:-200});
+  }
+  function sfxHit(){
+    noiseBurst({dur:0.15, vol:0.4, freq:400, sweep:-200});
+    tone({freq:160, type:"square", dur:0.12, vol:0.25, sweep:-80});
+  }
+  function sfxPlayerHit(){
+    tone({freq:600, type:"sawtooth", dur:0.3, vol:0.4, sweep:-500});
+    noiseBurst({dur:0.3, vol:0.35, freq:600, sweep:-400});
+  }
+  function sfxBoard(){
+    // Triumphant capture jingle
+    const seq = [523, 659, 784, 1046];
+    seq.forEach((f, i) => setTimeout(() => tone({freq:f, type:"square", dur:0.1, vol:0.25}), i*60));
+  }
+  function sfxPickup(){
+    tone({freq:880, type:"square", dur:0.06, vol:0.2});
+    setTimeout(() => tone({freq:1320, type:"square", dur:0.08, vol:0.2}), 60);
+  }
+  function sfxOneUp(){
+    [659, 784, 988, 1318].forEach((f, i) => setTimeout(() => tone({freq:f, type:"square", dur:0.08, vol:0.25}), i*70));
+  }
+  function sfxBossWarn(){
+    for (let i=0;i<4;i++) setTimeout(() => tone({freq:200, type:"sawtooth", dur:0.15, vol:0.35}), i*200);
+  }
+  function sfxBossExplode(){
+    for (let i=0;i<8;i++) setTimeout(() => sfxExplosion(true), i*120);
+  }
+  function sfxStageStart(){
+    [523, 659, 784].forEach((f, i) => setTimeout(() => tone({freq:f, type:"triangle", dur:0.15, vol:0.3}), i*100));
+  }
+  function sfxGameOver(){
+    [523, 466, 392, 330, 262].forEach((f, i) => setTimeout(() => tone({freq:f, type:"sawtooth", dur:0.25, vol:0.35}), i*180));
+  }
+
+  // BGM — simple chiptune loop, different per stage
+  // Notes in semitones from A4=440
+  const stageBgm = {
+    1: { // STAGE 1: marching military feel
+      bass: ["A2","A2","E2","E2","D2","D2","A2","A2", "F2","F2","C2","C2","G2","G2","E2","E2"],
+      lead: ["A4","_","C5","_","E5","C5","A4","_", "F4","A4","C5","_","D5","C5","B4","_"],
+      tempo: 130,
+    },
+    2: { // STAGE 2: desert tension
+      bass: ["D2","_","D2","_","A1","_","A1","_", "G1","_","G1","_","D2","D2","C2","_"],
+      lead: ["D4","F4","A4","_","D5","C5","A4","F4", "G4","A4","C5","_","A4","G4","F4","_"],
+      tempo: 140,
+    },
+    3: { // STAGE 3: final, ominous
+      bass: ["E2","E2","_","E2","E2","_","B1","_", "G1","G1","_","G1","D2","_","B1","_"],
+      lead: ["E4","_","G4","B4","E5","_","D5","B4", "G4","_","B4","D5","E5","D5","B4","G4"],
+      tempo: 120,
+    },
+  };
+  function noteFreq(name){
+    if (name === "_") return 0;
+    const map = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+    const m = name.match(/^([A-G])(#?)(-?\d)$/);
+    if (!m) return 0;
+    let n = map[m[1]] + (m[2] === "#" ? 1 : 0);
+    const oct = parseInt(m[3], 10);
+    const midi = 12*(oct+1) + n;
+    return 440 * Math.pow(2, (midi-69)/12);
+  }
+  function startBgm(stage){
+    if (!actx || muted) return;
+    stopBgm();
+    bgmStage = stage;
+    bgmStep = 0;
+    const cfg = stageBgm[stage] || stageBgm[1];
+    bgmTempo = cfg.tempo;
+    const tick = () => {
+      if (muted){ bgmTimer = null; return; }
+      const i = bgmStep % cfg.bass.length;
+      const bf = noteFreq(cfg.bass[i]);
+      const lf = noteFreq(cfg.lead[i]);
+      if (bf) tone({freq:bf, type:"triangle", dur:bgmTempo/1000*0.9, vol:0.18, attack:0.01, release:0.02});
+      if (lf) tone({freq:lf, type:"square", dur:bgmTempo/1000*0.7, vol:0.10, attack:0.005, release:0.02});
+      // hi-hat tick on every other step
+      if (bgmStep % 2 === 0) noiseBurst({dur:0.03, vol:0.06, freq:7000, q:5, sweep:0});
+      bgmStep++;
+      bgmTimer = setTimeout(tick, bgmTempo);
+    };
+    tick();
+  }
+  function stopBgm(){
+    if (bgmTimer){ clearTimeout(bgmTimer); bgmTimer = null; }
+  }
+  function setMuted(m){
+    muted = m;
+    if (muted) stopBgm();
+  }
+  function isMuted(){ return muted; }
+
+  return {
+    resume, ensure,
+    sfxShoot, sfxTankShot, sfxGrenadeThrow, sfxExplosion,
+    sfxEnemyShoot, sfxHit, sfxPlayerHit, sfxBoard,
+    sfxPickup, sfxOneUp, sfxBossWarn, sfxBossExplode,
+    sfxStageStart, sfxGameOver,
+    startBgm, stopBgm, setMuted, isMuted,
+  };
+})();
+
+// First user gesture: unlock audio
+function unlockAudio(){
+  audio.resume();
+  removeEventListener("keydown", unlockAudio);
+  removeEventListener("pointerdown", unlockAudio);
+}
+addEventListener("keydown", unlockAudio);
+addEventListener("pointerdown", unlockAudio);
 
 // ---------- Game state ----------
 let state;
@@ -102,6 +293,8 @@ function aabb(a,b){
   return Math.abs(a.x-b.x) < (a.w+b.w)/2 && Math.abs(a.y-b.y) < (a.h+b.h)/2;
 }
 function addExplosion(x,y,size=1){
+  if (size >= 1.0) audio.sfxExplosion(size >= 1.5);
+  else audio.sfxHit();
   const n = Math.floor(8 + size*10);
   for (let i=0;i<n;i++){
     state.fx.push({
@@ -273,6 +466,7 @@ function spawnBoss(){
   };
   state.bossActive = true;
   state.shake = 12;
+  audio.sfxBossWarn();
 }
 function bossPartWorldPos(boss, part){
   return { x: boss.x + part.ox * boss.w, y: boss.y + part.oy * boss.h, w: part.w, h: part.h };
@@ -286,14 +480,26 @@ function update(){
     if (pressed.z || pressed["enter"] || pressed[" "]){
       state.screen = "play";
       state.stageBanner = 120;
+      audio.sfxStageStart();
+      audio.startBgm(state.stage);
     }
+    if (pressed.m){ audio.setMuted(!audio.isMuted()); if (!audio.isMuted()) audio.startBgm(state.stage); }
     return;
   }
   if (state.screen === "over" || state.screen === "clear"){
     if (pressed.r){ reset(); }
+    if (pressed.m){ audio.setMuted(!audio.isMuted()); }
     return;
   }
-  if (pressed.p){ state.paused = !state.paused; }
+  if (pressed.p){
+    state.paused = !state.paused;
+    if (state.paused) audio.stopBgm();
+    else audio.startBgm(state.stage);
+  }
+  if (pressed.m){
+    audio.setMuted(!audio.isMuted());
+    if (!audio.isMuted() && !state.paused) audio.startBgm(state.stage);
+  }
   if (state.paused) return;
 
   state.scroll += 0.7;
@@ -379,6 +585,7 @@ function update(){
       state.bullets.push({x:p.x-3, y:p.y-12, vx:0, vy:-6, w:4, h:8, big:true, dmg:2});
       state.bullets.push({x:p.x+3, y:p.y-12, vx:0, vy:-6, w:4, h:8, big:true, dmg:2});
       addMuzzle(p.x, p.y-14, -Math.PI/2);
+      audio.sfxTankShot();
       p.shotCd = 14; p.muzzle = 4;
     } else if (p.mode === "heli"){
       // Spread shot
@@ -386,22 +593,26 @@ function update(){
       state.bullets.push({x:p.x-5, y:p.y-6, vx:-1.2, vy:-6.5, w:3, h:6, dmg:1});
       state.bullets.push({x:p.x+5, y:p.y-6, vx:1.2, vy:-6.5, w:3, h:6, dmg:1});
       addMuzzle(p.x, p.y-8, -Math.PI/2);
+      audio.sfxShoot();
       p.shotCd = 6; p.muzzle = 3;
     } else if (p.mode === "mech"){
       // Rapid heavy MG
       state.bullets.push({x:p.x-4, y:p.y-10, vx:rand(-0.3,0.3), vy:-7, w:3, h:6, dmg:1});
       state.bullets.push({x:p.x+4, y:p.y-10, vx:rand(-0.3,0.3), vy:-7, w:3, h:6, dmg:1});
       addMuzzle(p.x, p.y-10, -Math.PI/2);
+      audio.sfxShoot();
       p.shotCd = 4; p.muzzle = 2;
     } else if (p.mode === "apc"){
       // Twin MG
       state.bullets.push({x:p.x-4, y:p.y-10, vx:0, vy:-6, w:3, h:6, dmg:1});
       state.bullets.push({x:p.x+4, y:p.y-10, vx:0, vy:-6, w:3, h:6, dmg:1});
       addMuzzle(p.x, p.y-10, -Math.PI/2);
+      audio.sfxShoot();
       p.shotCd = 7; p.muzzle = 3;
     } else {
       state.bullets.push({x:p.x, y:p.y-10, vx:0, vy:-5.5, w:3, h:6, dmg:1});
       addMuzzle(p.x, p.y-12, -Math.PI/2);
+      audio.sfxShoot();
       p.shotCd = 8; p.muzzle = 3;
     }
   }
@@ -415,6 +626,7 @@ function update(){
       vx: ax*2.4, vy: ay*2.4 - 1.2,
       life: 50, spin: 0,
     });
+    audio.sfxGrenadeThrow();
     p.grenadeCd = 30;
     p.grenadeStock--;
   }
@@ -628,6 +840,7 @@ function update(){
         });
       }
       addExplosion(b.x, b.y, 4);
+      audio.sfxBossExplode();
       state.score += 5000 + state.stage * 2000;
       state.boss = null;
       state.bossActive = false;
@@ -636,6 +849,10 @@ function update(){
       state.stageBanner = 180;
       if (state.stage > 3){
         state.screen = "clear";
+        audio.stopBgm();
+      } else {
+        audio.sfxStageStart();
+        audio.startBgm(state.stage);
       }
     }
   }
@@ -708,8 +925,8 @@ function update(){
   for (const it of state.items){
     it.life--;
     if (aabb(it, {x:p.x,y:p.y,w:14,h:16})){
-      if (it.kind === "grenade"){ p.grenadeStock = Math.min(8, p.grenadeStock+2); state.score += 50; }
-      else if (it.kind === "life"){ p.lives++; state.score += 200; }
+      if (it.kind === "grenade"){ p.grenadeStock = Math.min(8, p.grenadeStock+2); state.score += 50; audio.sfxPickup(); }
+      else if (it.kind === "life"){ p.lives++; state.score += 200; audio.sfxOneUp(); }
       it.life = 0;
     }
   }
@@ -745,6 +962,7 @@ function update(){
             p.invuln = 40;
             e.hp = 0;
             state.score += 500;
+            audio.sfxBoard();
             addExplosion(p.x, p.y, 0.8);
           }
         } else if (aabb(p, e)){
@@ -784,6 +1002,7 @@ function hitPlayer(){
   if (p.mode !== "foot"){
     p.vehHp--;
     p.invuln = 35;
+    audio.sfxHit();
     addExplosion(p.x, p.y, 0.6);
     if (p.vehHp <= 0){
       p.mode = "foot";
@@ -794,9 +1013,12 @@ function hitPlayer(){
   }
   p.lives--;
   p.invuln = 90;
+  audio.sfxPlayerHit();
   addExplosion(p.x, p.y, 1.6);
   if (p.lives < 0){
     state.screen = "over";
+    audio.stopBgm();
+    audio.sfxGameOver();
   } else {
     p.x = W/2; p.y = H - 70;
     p.grenadeStock = Math.max(p.grenadeStock, 3);
@@ -1390,6 +1612,12 @@ function drawHUD(){
     ctx.font = "9px monospace";
     ctx.textAlign = "right";
     ctx.fillText(state.player.mode.toUpperCase()+" "+state.player.vehHp, W-6, 26);
+  }
+  if (audio.isMuted()){
+    ctx.fillStyle = "#ff5252";
+    ctx.font = "9px monospace";
+    ctx.textAlign = "left";
+    ctx.fillText("MUTE", 6, 26);
   }
 
   if (state.stageBanner > 0 && state.screen === "play"){
