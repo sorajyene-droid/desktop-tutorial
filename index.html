@@ -352,24 +352,69 @@ const audio = (() => {
   }
 
   // BGM — simple chiptune loop, different per stage
-  // Notes in semitones from A4=440
+  // 32-step patterns with bass / lead / harmony / drum tracks.
+  // K = kick, S = snare, H = hi-hat (closed), O = open hat
+  const _ = "_";
   const stageBgm = {
-    1: { // STAGE 1: marching military feel
-      bass: ["A2","A2","E2","E2","D2","D2","A2","A2", "F2","F2","C2","C2","G2","G2","E2","E2"],
-      lead: ["A4","_","C5","_","E5","C5","A4","_", "F4","A4","C5","_","D5","C5","B4","_"],
-      tempo: 130,
-    },
-    2: { // STAGE 2: desert tension
-      bass: ["D2","_","D2","_","A1","_","A1","_", "G1","_","G1","_","D2","D2","C2","_"],
-      lead: ["D4","F4","A4","_","D5","C5","A4","F4", "G4","A4","C5","_","A4","G4","F4","_"],
-      tempo: 140,
-    },
-    3: { // STAGE 3: final, ominous
-      bass: ["E2","E2","_","E2","E2","_","B1","_", "G1","G1","_","G1","D2","_","B1","_"],
-      lead: ["E4","_","G4","B4","E5","_","D5","B4", "G4","_","B4","D5","E5","D5","B4","G4"],
+    1: { // Heroic march — A minor
       tempo: 120,
+      bass: [
+        "A2",_,"A2",_,"E3",_,"A2",_,  "A2",_,"A2","E2","E3",_,"D3",_,
+        "F2",_,"F2",_,"C3",_,"F2",_,  "G2",_,"G2","D3","E3",_,"E2",_,
+      ],
+      lead: [
+        "A4",_,"C5","E5","A5",_,"E5","C5",  "B4","A4","E5",_,"D5",_,"C5","B4",
+        "F4","A4","C5","F5","E5","C5","A4","C5",  "G4","B4","D5","G5","E5","D5","C5","B4",
+      ],
+      harm: [
+        _,_,"E4",_,_,_,"A4",_,  _,_,"C5",_,_,_,"E4",_,
+        _,_,"A4",_,_,_,"C5",_,  _,_,"D5",_,_,_,"G4",_,
+      ],
+      drum: [
+        "K","H","S","H","K","H","S","H",  "K","H","S","H","K","K","S","O",
+        "K","H","S","H","K","H","S","H",  "K","H","S","H","K","K","S","O",
+      ],
+    },
+    2: { // Desert chase — D dorian, syncopated
+      tempo: 138,
+      bass: [
+        "D2",_,_,"D2","A2",_,"D2",_,  "F2",_,_,"F2","C3",_,"F2",_,
+        "G2",_,_,"G2","D3",_,"G2",_,  "A2","A2","E3",_,"A2",_,"C3","E3",
+      ],
+      lead: [
+        "D5",_,"F5","A5","G5","F5","D5","A4",  "F5","E5","D5","F5","A5",_,"G5","F5",
+        "E5",_,"G5","B5","A5","G5","E5","B4",  "A5","G5","E5","D5","C5","A4","D5","E5",
+      ],
+      harm: [
+        "A4",_,_,_,"D5",_,_,_,  "C5",_,_,_,"F5",_,_,_,
+        "B4",_,_,_,"D5",_,_,_,  "C5",_,_,"E5","A5",_,_,_,
+      ],
+      drum: [
+        "K","H","H","S","K","H","O","S",  "K","H","H","S","K","K","S","H",
+        "K","H","H","S","K","H","O","S",  "K","H","S","H","K","S","K","O",
+      ],
+    },
+    3: { // Final stage — E phrygian, ominous power
+      tempo: 110,
+      bass: [
+        "E2","E2",_,"E2","B2",_,"E2",_,  "E2","E2","E3","E2","B2",_,"D3",_,
+        "C3","C3",_,"C3","G2",_,"C3",_,  "D3","D3","A2","D3","E3",_,"B2","E3",
+      ],
+      lead: [
+        "E5",_,"G5","B5","E6",_,"D6","B5",  "C6","B5","G5","B5","D6",_,"C6","B5",
+        "G5",_,"B5","D6","G6",_,"F6","D6",  "E6","D6","B5","D6","E6","D6","C6","B5",
+      ],
+      harm: [
+        "B4",_,_,_,"E5",_,"G5","E5",  "G5",_,_,_,"B5",_,"D6","B5",
+        "C5",_,_,_,"E5",_,"G5","E5",  "G5",_,_,_,"B5",_,"E6","B5",
+      ],
+      drum: [
+        "K",_,"S","H","K","H","S","K",  "K","H","S","H","K","K","S","O",
+        "K",_,"S","H","K","H","S","K",  "K","S","K","S","O","O","S","O",
+      ],
     },
   };
+
   function noteFreq(name){
     if (name === "_") return 0;
     const map = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
@@ -380,6 +425,24 @@ const audio = (() => {
     const midi = 12*(oct+1) + n;
     return 440 * Math.pow(2, (midi-69)/12);
   }
+  function drumHit(kind, vol=0.4){
+    if (!actx || muted) return;
+    if (kind === "K"){
+      // Kick: low sine sweep
+      tone({freq:140, type:"sine", dur:0.10, vol:vol*0.95, sweep:-100, attack:0.002, release:0.04});
+      tone({freq:60,  type:"sine", dur:0.12, vol:vol*0.7, sweep:-30, attack:0.002, release:0.04});
+    } else if (kind === "S"){
+      // Snare: noise + tone body
+      noiseBurst({dur:0.10, vol:vol*0.45, freq:1800, q:0.8, sweep:-600});
+      tone({freq:220, type:"triangle", dur:0.06, vol:vol*0.25, sweep:-120});
+    } else if (kind === "H"){
+      // Closed hi-hat
+      noiseBurst({dur:0.04, vol:vol*0.18, freq:8000, q:6, sweep:0});
+    } else if (kind === "O"){
+      // Open hi-hat
+      noiseBurst({dur:0.18, vol:vol*0.14, freq:7500, q:4, sweep:-1500});
+    }
+  }
   function startBgm(stage){
     if (!actx || muted) return;
     stopBgm();
@@ -389,13 +452,34 @@ const audio = (() => {
     bgmTempo = cfg.tempo;
     const tick = () => {
       if (muted){ bgmTimer = null; return; }
-      const i = bgmStep % cfg.bass.length;
+      const len = cfg.bass.length;
+      const i = bgmStep % len;
+      const bar = Math.floor(bgmStep / len) % 4; // 4-bar phrase variation
+      const stepDur = bgmTempo/1000;
+      // Bass — triangle
       const bf = noteFreq(cfg.bass[i]);
+      if (bf) tone({freq:bf, type:"triangle", dur:stepDur*0.92, vol:0.20, attack:0.005, release:0.04});
+      // Lead — square pulse
       const lf = noteFreq(cfg.lead[i]);
-      if (bf) tone({freq:bf, type:"triangle", dur:bgmTempo/1000*0.9, vol:0.18, attack:0.01, release:0.02});
-      if (lf) tone({freq:lf, type:"square", dur:bgmTempo/1000*0.7, vol:0.10, attack:0.005, release:0.02});
-      // hi-hat tick on every other step
-      if (bgmStep % 2 === 0) noiseBurst({dur:0.03, vol:0.06, freq:7000, q:5, sweep:0});
+      if (lf) tone({freq:lf, type:"square", dur:stepDur*0.78, vol:0.10, attack:0.003, release:0.03});
+      // Harmony — softer square one octave shifted
+      const hf = noteFreq(cfg.harm[i]);
+      if (hf) tone({freq:hf, type:"square", dur:stepDur*0.65, vol:0.06, attack:0.005, release:0.05});
+      // Drum
+      const d = cfg.drum[i];
+      if (d && d !== "_") drumHit(d, 0.45);
+      // Ad-lib: every 4th bar add a fill on last 4 steps
+      if (bar === 3 && i >= len-4){
+        if (i % 2 === 0){
+          tone({freq:880 + (i-len+4)*120, type:"square", dur:stepDur*0.4, vol:0.07});
+        }
+        if (i === len-1) drumHit("O", 0.6);
+      }
+      // Arp on top — gentle, only when not on a rest
+      if (lf && bar % 2 === 1){
+        const arp = lf * 2;
+        tone({freq:arp, type:"square", dur:stepDur*0.18, vol:0.04, attack:0.001, release:0.02});
+      }
       bgmStep++;
       bgmTimer = setTimeout(tick, bgmTempo);
     };
@@ -2469,20 +2553,167 @@ function drawTitle(){
   ctx.fillText("THEN STEP ON IT TO STEAL IT!", W/2, 462);
 }
 
+function drawHero(x, y, walkPhase=0){
+  // Elite operator: tactical helmet with NVG, vest with mags, scarf, knife
+  const step = Math.sin(walkPhase) * 2;
+  const armSwing = Math.sin(walkPhase) * 1.5;
+
+  // Long shadow
+  ctx.fillStyle = "rgba(0,0,0,0.45)";
+  ctx.beginPath(); ctx.ellipse(x, y+12, 9, 3, 0, 0, Math.PI*2); ctx.fill();
+
+  // Backpack
+  ctx.fillStyle = "#1c2620";
+  ctx.fillRect(x-3, y-3, 6, 7);
+  ctx.fillStyle = "#3a4a3e";
+  ctx.fillRect(x-3, y-3, 6, 1);
+  // sleeping roll on top
+  ctx.fillStyle = "#5d4037";
+  ctx.fillRect(x-3, y-4, 6, 1);
+
+  // Legs (cargo pants — dark olive)
+  ctx.fillStyle = "#3b4a32";
+  const lLen = 5 + (step>0?1:0);
+  const rLen = 5 + (step<0?1:0);
+  ctx.fillRect(x-3, y+3, 2, lLen);
+  ctx.fillRect(x+1, y+3, 2, rLen);
+  // Knee pads (rectangles)
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x-3, y+5, 2, 1);
+  ctx.fillRect(x+1, y+5, 2, 1);
+  // Combat boots (chunkier)
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(x-4, y+3+lLen, 4, 3);
+  ctx.fillRect(x+0, y+3+rLen, 4, 3);
+  // boot lace highlight
+  ctx.fillStyle = "#444";
+  ctx.fillRect(x-3, y+3+lLen, 2, 1);
+  ctx.fillRect(x+1, y+3+rLen, 2, 1);
+
+  // Tactical vest body — dark camo
+  ctx.fillStyle = "#2f3a26";
+  ctx.fillRect(x-4, y-3, 8, 7);
+  // Camo blotches (lighter and darker)
+  ctx.fillStyle = "#4a5a3a";
+  ctx.fillRect(x-3, y-2, 2, 2);
+  ctx.fillRect(x+1, y, 2, 2);
+  ctx.fillStyle = "#1f2a18";
+  ctx.fillRect(x-2, y+1, 2, 1);
+  ctx.fillRect(x+2, y-2, 1, 2);
+  // Vest plating outline
+  ctx.fillStyle = "#1a2218";
+  ctx.fillRect(x-4, y-3, 8, 1);
+  ctx.fillRect(x-4, y+3, 8, 1);
+  ctx.fillRect(x-4, y-3, 1, 7);
+  ctx.fillRect(x+3, y-3, 1, 7);
+  // Magazine pouches on chest
+  ctx.fillStyle = "#1c1c1c";
+  ctx.fillRect(x-3, y-1, 2, 3);
+  ctx.fillRect(x+1, y-1, 2, 3);
+  ctx.fillStyle = "#444";
+  ctx.fillRect(x-3, y-1, 2, 1);
+  ctx.fillRect(x+1, y-1, 2, 1);
+  // Belt
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x-4, y+2, 8, 1);
+  ctx.fillStyle = "#9e7e3a";
+  ctx.fillRect(x-1, y+2, 2, 1);
+  // Holstered pistol on hip
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(x+3, y+3, 2, 3);
+  // Combat knife
+  ctx.fillStyle = "#bbb";
+  ctx.fillRect(x-5, y+3, 1, 3);
+  ctx.fillStyle = "#5d4037";
+  ctx.fillRect(x-5, y+6, 1, 1);
+
+  // Scarf / shemagh around neck
+  ctx.fillStyle = "#b71c1c";
+  ctx.fillRect(x-4, y-5, 8, 2);
+  ctx.fillStyle = "#7d0000";
+  ctx.fillRect(x-4, y-4, 8, 1);
+  // Scarf tail flutter
+  if (Math.sin(walkPhase) > 0){
+    ctx.fillStyle = "#b71c1c";
+    ctx.fillRect(x-6, y-4, 2, 1);
+  } else {
+    ctx.fillStyle = "#b71c1c";
+    ctx.fillRect(x+4, y-4, 2, 1);
+  }
+
+  // Shoulder armor pads
+  ctx.fillStyle = "#2a3320";
+  ctx.fillRect(x-5, y-3, 1, 3);
+  ctx.fillRect(x+4, y-3, 1, 3);
+  ctx.fillStyle = "rgba(255,255,255,0.18)";
+  ctx.fillRect(x-5, y-3, 1, 1);
+  ctx.fillRect(x+4, y-3, 1, 1);
+
+  // Head (tan skin)
+  ctx.fillStyle = "#e9b88a";
+  ctx.fillRect(x-3, y-9, 6, 5);
+  ctx.fillStyle = "rgba(0,0,0,0.22)";
+  ctx.fillRect(x+2, y-9, 1, 5);
+
+  // Tactical helmet with rim
+  ctx.fillStyle = "#2a3320";
+  ctx.fillRect(x-4, y-12, 8, 4);
+  ctx.fillStyle = "#1a2218";
+  ctx.fillRect(x-4, y-9, 8, 1);
+  // Helmet highlight
+  ctx.fillStyle = "rgba(255,255,255,0.25)";
+  ctx.fillRect(x-3, y-12, 6, 1);
+  // Helmet camo strip
+  ctx.fillStyle = "#4a5a3a";
+  ctx.fillRect(x-2, y-11, 1, 1);
+  ctx.fillRect(x+1, y-10, 2, 1);
+  // NVG mount + tubes (the cool factor)
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(x-1, y-13, 2, 2);
+  ctx.fillRect(x-3, y-12, 2, 3);
+  ctx.fillRect(x+1, y-12, 2, 3);
+  // NVG lens glow
+  ctx.fillStyle = "#80ff80";
+  ctx.fillRect(x-3, y-11, 1, 1);
+  ctx.fillRect(x+2, y-11, 1, 1);
+
+  // Chin strap
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(x-3, y-5, 6, 1);
+
+  // Modern carbine (stocked, scoped)
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x+1, y-14, 2, 9);     // barrel
+  ctx.fillStyle = "#444";
+  ctx.fillRect(x+1, y-14, 2, 1);     // muzzle
+  ctx.fillStyle = "#3e2723";
+  ctx.fillRect(x-1, y-7, 5, 2);      // stock/foregrip
+  // Scope
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(x+1, y-10, 2, 2);
+  ctx.fillStyle = "#80deea";
+  ctx.fillRect(x+1, y-10, 1, 1);
+  // Trigger guard hint
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x+0, y-6, 1, 2);
+}
+
 function drawPlayer(){
   const p = state.player;
   const blink = (p.invuln > 0 && (state.t % 6) < 3);
   if (blink) return;
   switch(p.mode){
-    case "tank": drawTank({x:p.x, y:p.y}, true, false, p.vehHp > 5); break;
+    case "tank": drawTank({x:p.x, y:p.y}, true, false, p.vehHp > 9); break;
     case "heli": drawHeli({x:p.x, y:p.y, bladePhase:state.t*0.6}, true, false, false); break;
     case "mech": drawMech({x:p.x, y:p.y, walkPhase:p.walkPhase||0}, true, false); break;
     case "apc":  drawAPC({x:p.x, y:p.y}, true, false); break;
-    default:     drawSoldier(p.x, p.y, "#3a7d3a", p.walkPhase||0, -1);
+    default:     drawHero(p.x, p.y, p.walkPhase||0);
   }
   if (p.muzzle > 0){
     ctx.fillStyle = "#ffeb3b";
-    ctx.beginPath(); ctx.arc(p.x, p.y-12, 3, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x+2, p.y-14, 4, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.arc(p.x+2, p.y-14, 2, 0, Math.PI*2); ctx.fill();
   }
 }
 
