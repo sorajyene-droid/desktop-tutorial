@@ -119,7 +119,8 @@
   <div id="help">
     <kbd>←→↑↓</kbd> 移動 ／ <kbd>Z</kbd> ショット ／ <kbd>X</kbd> 手榴弾 ／ <kbd>R</kbd> リスタート ／ <kbd>P</kbd> ポーズ ／ <kbd>M</kbd> ミュート
     <div class="legend">
-      手榴弾で気絶させた<b>戦車・ヘリ・メカ・装甲車</b>に乗ると奪える！それぞれ性能が違うぞ。
+      手榴弾で気絶させた<b>戦車・ヘリ・メカ・装甲車</b>に乗ると奪える！<br>
+      白旗（HELP!）の<b>味方兵</b>に触れると仲間になって一緒に戦ってくれるぞ。
     </div>
   </div>
 
@@ -444,14 +445,14 @@ function reset() {
     player: {
       x: W/2, y: H - 70, w: 14, h: 16,
       dir: -Math.PI/2,
-      mode: "foot",      // "foot" | "tank" | "heli" | "mech" | "apc"
+      mode: "foot",
       vehHp: 0,
       shotCd: 0,
       grenadeCd: 0,
-      grenadeStock: 5,
+      grenadeStock: 8,
       grenadeRegen: 0,
-      invuln: 60,
-      lives: 3,
+      invuln: 90,
+      lives: 5,
       walkPhase: 0,
       muzzle: 0,
     },
@@ -459,12 +460,14 @@ function reset() {
     eBullets: [],
     grenades: [],
     enemies: [],
-    items: [],           // pickups (grenades / extra life)
+    allies: [],          // friendly NPCs that follow and fight
+    items: [],
     fx: [],
     smoke: [],
     score: 0,
     spawnTimer: 0,
     heliTimer: 200,
+    powTimer: 240,       // POW spawn timer
     flash: 0,
     shake: 0,
   };
@@ -622,13 +625,38 @@ function spawnPara(x,y){
     color: "#c0392b",
   });
 }
+function spawnPOW(){
+  // Captured friendly waiting on the field — touch to recruit
+  state.items.push({
+    kind: "pow",
+    x: rand(30, W-30),
+    y: -20,
+    vy: 0.4,
+    w: 14, h: 18,
+    life: 1200,
+    bob: 0,
+  });
+}
+function recruitAlly(x, y){
+  if (state.allies.length >= 4) return; // cap
+  state.allies.push({
+    x, y,
+    w: 12, h: 16,
+    targetX: x, targetY: y,
+    walkPhase: 0,
+    shotCd: 30,
+    invuln: 60,
+    hp: 2,
+  });
+  audio.sfxBoard();
+}
 function spawnBoss(){
   // Boss size grows by stage. Final stage = huge mega-boss.
   const stage = state.stage;
   const sizeMul = stage === 1 ? 1.0 : stage === 2 ? 1.3 : 1.7;
   const w = Math.floor(140 * sizeMul);
   const h = Math.floor(110 * sizeMul);
-  const baseHp = 60 + (stage-1) * 50;
+  const baseHp = 40 + (stage-1) * 30;
   state.boss = {
     type:"boss",
     name: stage === 1 ? "WAR FORTRESS" : stage === 2 ? "DESERT KRAKEN" : "OMEGA LEVIATHAN",
@@ -722,13 +750,19 @@ function update(){
       else if (r<0.92) spawnAPC();
       else spawnMech();
     }
-    state.spawnTimer = Math.max(18, 65 - diff*8) + irand(0,18);
+    state.spawnTimer = Math.max(35, 95 - diff*8) + irand(0,25);
   }
   state.heliTimer--;
   if (!state.bossActive && state.heliTimer <= 0){
     if (state.stage >= 2 && Math.random() < 0.4) spawnHeli(true);
     else spawnHeli(false);
-    state.heliTimer = irand(280, 460);
+    state.heliTimer = irand(380, 600);
+  }
+  // POW (rescuable allies) — spawn periodically
+  state.powTimer--;
+  if (!state.bossActive && state.powTimer <= 0){
+    spawnPOW();
+    state.powTimer = irand(420, 680);
   }
 
   // Player
@@ -1109,13 +1143,77 @@ function update(){
   // Items pickup
   for (const it of state.items){
     it.life--;
+    if (it.kind === "pow"){
+      // POW walks down then stays
+      if (it.y < H - 120) it.y += it.vy;
+      it.bob = (it.bob||0) + 0.1;
+    }
     if (aabb(it, {x:p.x,y:p.y,w:14,h:16})){
       if (it.kind === "grenade"){ p.grenadeStock = Math.min(8, p.grenadeStock+2); state.score += 50; audio.sfxPickup(); }
       else if (it.kind === "life"){ p.lives++; state.score += 200; audio.sfxOneUp(); }
+      else if (it.kind === "pow"){ recruitAlly(it.x, it.y); state.score += 300; }
       it.life = 0;
     }
   }
   state.items = state.items.filter(i => i.life > 0);
+
+  // Allies — follow player at offsets, auto-shoot at nearest enemy
+  for (let i = 0; i < state.allies.length; i++){
+    const a = state.allies[i];
+    if (a.invuln > 0) a.invuln--;
+    // Target offset position behind/beside player
+    const angle = (i - (state.allies.length-1)/2) * 0.6;
+    const dist = 26 + (i%2)*8;
+    a.targetX = p.x + Math.sin(angle) * dist;
+    a.targetY = p.y + 22 + Math.cos(angle) * 6;
+    // Smooth chase
+    const dx = a.targetX - a.x, dy = a.targetY - a.y;
+    const d = Math.hypot(dx, dy);
+    if (d > 1){
+      const sp = Math.min(2.5, d * 0.15);
+      a.x += (dx/d) * sp;
+      a.y += (dy/d) * sp;
+      a.walkPhase += 0.2;
+    }
+    a.x = Math.max(8, Math.min(W-8, a.x));
+    a.y = Math.max(20, Math.min(H-12, a.y));
+    // Auto-fire
+    a.shotCd--;
+    if (a.shotCd <= 0){
+      // Find nearest enemy ahead of ally
+      let best = null, bestD = 9999;
+      for (const e of state.enemies){
+        if (e.hp <= 0) continue;
+        if (e.y > a.y) continue; // shoot upward only
+        const d = Math.hypot(e.x - a.x, e.y - a.y);
+        if (d < bestD){ bestD = d; best = e; }
+      }
+      if (best || state.boss){
+        const tx = best ? best.x : state.boss.x;
+        const ty = best ? best.y : state.boss.y;
+        const ang = Math.atan2(ty - a.y, tx - a.x);
+        state.bullets.push({
+          x: a.x, y: a.y - 8,
+          vx: Math.cos(ang)*5, vy: Math.sin(ang)*5,
+          w: 3, h: 5, dmg: 1, ally: true,
+        });
+      }
+      a.shotCd = 28;
+    }
+    // Hit by enemy bullet?
+    if (a.invuln <= 0){
+      for (const b of state.eBullets){
+        if (aabb(b, a)){
+          a.hp--;
+          a.invuln = 30;
+          b.dead = true;
+          addExplosion(a.x, a.y, 0.4);
+          break;
+        }
+      }
+    }
+  }
+  state.allies = state.allies.filter(a => a.hp > 0);
 
   // Player vs enemy bullets / enemies
   if (p.invuln <= 0){
@@ -1738,6 +1836,22 @@ function drawItem(it){
     ctx.fillStyle = "#ffd54a";
     ctx.font = "8px monospace"; ctx.textAlign="center";
     ctx.fillText("G", it.x, it.y+3);
+  } else if (it.kind === "pow"){
+    // Captured friendly waving — flag + soldier
+    const bob = Math.sin(it.bob||0) * 1.5;
+    drawSoldier(it.x, it.y + bob, "#3a7d3a", it.bob||0, -1);
+    // White flag
+    ctx.fillStyle = "#222";
+    ctx.fillRect(it.x+4, it.y-18+bob, 1, 12);
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(it.x+5, it.y-18+bob, 7, 5);
+    // Beacon arrow
+    if ((state.t/8|0)%2 === 0){
+      ctx.fillStyle = "#ffeb3b";
+      ctx.font = "bold 10px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("HELP!", it.x, it.y - 22 + bob);
+    }
   } else {
     ctx.fillStyle = "#e91e63";
     ctx.fillRect(it.x-4, it.y-4, 8, 8);
@@ -1745,6 +1859,13 @@ function drawItem(it){
     ctx.font = "9px monospace"; ctx.textAlign="center";
     ctx.fillText("1UP", it.x, it.y+3);
   }
+}
+
+function drawAlly(a){
+  const blink = (a.invuln > 0 && (state.t % 6) < 3);
+  if (blink) return;
+  // green-blue tint to differentiate from player
+  drawSoldier(a.x, a.y, "#1976d2", a.walkPhase||0, -1);
 }
 
 function drawFX(){
@@ -1783,7 +1904,11 @@ function drawHUD(){
   ctx.fillText("SCORE " + String(state.score).padStart(6,"0"), 6, 12);
   // grenades
   ctx.fillStyle = "#fff";
-  ctx.fillText("G:" + state.player.grenadeStock, 130, 12);
+  ctx.fillText("G:" + state.player.grenadeStock, 110, 12);
+  if (state.allies.length > 0){
+    ctx.fillStyle = "#64b5f6";
+    ctx.fillText("味方:" + state.allies.length, 150, 12);
+  }
   // stage
   ctx.textAlign = "center";
   ctx.fillStyle = "#9ef";
@@ -1913,6 +2038,7 @@ function render(){
   for (const b of state.eBullets) drawBullet(b, "#ff5252");
 
   drawPlayer();
+  for (const a of state.allies) drawAlly(a);
   drawFX();
 
   if (state.flash > 0){
