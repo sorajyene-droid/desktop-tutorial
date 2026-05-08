@@ -541,7 +541,7 @@ function spawnHeavySoldier(){
     x: rand(20, W-20), y: -10,
     w: 14, h: 16,
     vy: rand(0.4, 0.7),
-    hp: 3,
+    hp: 2,
     shotCd: irand(80, 140),
     walkPhase: 0,
     color: "#7d3c98",
@@ -565,7 +565,7 @@ function spawnTank(){
     x: rand(30, W-30), y: -20,
     w: 22, h: 22,
     vy: rand(0.3, 0.6),
-    hp: 5,
+    hp: 3,
     shotCd: irand(80, 160),
     stunned: 0,
     boardable: true,
@@ -577,7 +577,7 @@ function spawnHeavyTank(){
     x: rand(30, W-30), y: -20,
     w: 28, h: 26,
     vy: rand(0.2, 0.4),
-    hp: 9,
+    hp: 5,
     shotCd: irand(60, 120),
     stunned: 0,
     boardable: true,
@@ -589,7 +589,7 @@ function spawnAPC(){
     x: rand(30, W-30), y: -20,
     w: 22, h: 26,
     vy: rand(0.7, 1.1),
-    hp: 4,
+    hp: 2,
     shotCd: irand(70, 120),
     stunned: 0,
     boardable: true,
@@ -601,7 +601,7 @@ function spawnMech(){
     x: rand(30, W-30), y: -28,
     w: 22, h: 28,
     vy: rand(0.25, 0.45),
-    hp: 7,
+    hp: 4,
     shotCd: irand(50, 110),
     stunned: 0,
     boardable: true,
@@ -669,7 +669,7 @@ function spawnBoss(){
   const sizeMul = stage === 1 ? 1.0 : stage === 2 ? 1.3 : 1.7;
   const w = Math.floor(140 * sizeMul);
   const h = Math.floor(110 * sizeMul);
-  const baseHp = 40 + (stage-1) * 30;
+  const baseHp = 25 + (stage-1) * 20;
   state.boss = {
     type:"boss",
     name: stage === 1 ? "WAR FORTRESS" : stage === 2 ? "DESERT KRAKEN" : "OMEGA LEVIATHAN",
@@ -684,9 +684,9 @@ function spawnBoss(){
     phase: 0,
     // Destructible sub-parts (turrets) — relative offsets, scaled later
     parts: [
-      { name:"L_TURRET", ox:-0.42, oy: 0.05, hp: 12, max: 12, shotCd: 80, w: 26*sizeMul, h: 22*sizeMul },
-      { name:"R_TURRET", ox: 0.42, oy: 0.05, hp: 12, max: 12, shotCd: 110, w: 26*sizeMul, h: 22*sizeMul },
-      { name:"TOP_GUN",  ox: 0.0,  oy:-0.32, hp: 8,  max: 8,  shotCd: 60, w: 22*sizeMul, h: 18*sizeMul },
+      { name:"L_TURRET", ox:-0.42, oy: 0.05, hp: 6, max: 6, shotCd: 120, w: 26*sizeMul, h: 22*sizeMul },
+      { name:"R_TURRET", ox: 0.42, oy: 0.05, hp: 6, max: 6, shotCd: 150, w: 26*sizeMul, h: 22*sizeMul },
+      { name:"TOP_GUN",  ox: 0.0,  oy:-0.32, hp: 4, max: 4, shotCd: 90, w: 22*sizeMul, h: 18*sizeMul },
     ],
     introT: 0,
   };
@@ -1153,20 +1153,29 @@ function update(){
   state.bullets = state.bullets.filter(b => !b.dead);
   state.enemies = state.enemies.filter(e => e.hp > 0 && e.y < H + 30 && e.x > -50 && e.x < W+50);
 
-  // Items pickup — generous hitbox using distance check
+  // Items pickup — magnet effect + huge pickup radius
   for (const it of state.items){
     it.life--;
     if (it.kind === "pow"){
       if (it.y < H - 120) it.y += it.vy;
       it.bob = (it.bob||0) + 0.1;
     }
-    const pickupR = it.kind === "pow" ? 18 : 16;
+    // Magnet: pull items toward player when nearby (except POW which stays put)
+    if (it.kind !== "pow"){
+      const d = Math.hypot(it.x - p.x, it.y - p.y);
+      if (d < 90 && d > 0.5){
+        const pull = 1.6;
+        it.x += (p.x - it.x) / d * pull;
+        it.y += (p.y - it.y) / d * pull;
+      }
+    }
+    const pickupR = it.kind === "pow" ? 22 : 28;
     if (Math.hypot(it.x - p.x, it.y - p.y) < pickupR){
       if (it.kind === "grenade"){
-        p.grenadeStock = Math.min(8, p.grenadeStock+2);
+        p.grenadeStock = Math.min(12, p.grenadeStock+3);
         state.score += 50;
         audio.sfxPickup();
-        spawnFloater(it.x, it.y, "+2 GRENADE", "#ffd54a");
+        spawnFloater(it.x, it.y, "+3 GRENADE", "#ffd54a");
       } else if (it.kind === "life"){
         p.lives++;
         state.score += 200;
@@ -1260,12 +1269,12 @@ function update(){
           if (aabb(p, e) && p.mode === "foot"){
             // Board!
             switch(e.type){
-              case "tank":      p.mode = "tank";  p.vehHp = 5; break;
-              case "heavyTank": p.mode = "tank";  p.vehHp = 8; break;
-              case "apc":       p.mode = "apc";   p.vehHp = 4; break;
-              case "mech":      p.mode = "mech";  p.vehHp = 6; break;
-              case "heli":      p.mode = "heli";  p.vehHp = 3; break;
-              case "attackHeli":p.mode = "heli";  p.vehHp = 5; break;
+              case "tank":      p.mode = "tank";  p.vehHp = 9; break;
+              case "heavyTank": p.mode = "tank";  p.vehHp = 14; break;
+              case "apc":       p.mode = "apc";   p.vehHp = 8; break;
+              case "mech":      p.mode = "mech";  p.vehHp = 11; break;
+              case "heli":      p.mode = "heli";  p.vehHp = 6; break;
+              case "attackHeli":p.mode = "heli";  p.vehHp = 9; break;
             }
             p.invuln = 40;
             e.hp = 0;
@@ -1422,82 +1431,219 @@ function drawBackground(){
   }
 }
 
+function darken(hex, factor){
+  const m = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+  if (!m) return hex;
+  const r = Math.max(0, Math.min(255, Math.floor(parseInt(m[1],16) * factor)));
+  const g = Math.max(0, Math.min(255, Math.floor(parseInt(m[2],16) * factor)));
+  const b = Math.max(0, Math.min(255, Math.floor(parseInt(m[3],16) * factor)));
+  return `rgb(${r},${g},${b})`;
+}
+
 function drawSoldier(x,y, color, walkPhase=0, facing=-1){
   const step = Math.sin(walkPhase) * 2;
-  // shadow
-  ctx.fillStyle = "rgba(0,0,0,0.3)";
-  ctx.beginPath(); ctx.ellipse(x, y+9, 7, 2, 0, 0, Math.PI*2); ctx.fill();
-  // body
+  const helmet = darken(color, 0.5);
+  const helmetDark = darken(color, 0.3);
+
+  // Long shadow
+  ctx.fillStyle = "rgba(0,0,0,0.4)";
+  ctx.beginPath(); ctx.ellipse(x, y+11, 8, 2.5, 0, 0, Math.PI*2); ctx.fill();
+
+  // Backpack (visible when facing up/away)
+  if (facing < 0){
+    ctx.fillStyle = "#3e2723";
+    ctx.fillRect(x-3, y-2, 6, 6);
+    ctx.fillStyle = "#5d4037";
+    ctx.fillRect(x-3, y-2, 6, 1);
+    // strap
+    ctx.fillStyle = "#222";
+    ctx.fillRect(x-2, y-3, 1, 5);
+    ctx.fillRect(x+1, y-3, 1, 5);
+  }
+
+  // Legs (with boots and walk anim)
+  const lLen = 5 + (step>0?1:0);
+  const rLen = 5 + (step<0?1:0);
+  ctx.fillStyle = darken(color, 0.45);
+  ctx.fillRect(x-3, y+3, 2, lLen);
+  ctx.fillRect(x+1, y+3, 2, rLen);
+  // boots
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(x-4, y+3+lLen, 4, 2);
+  ctx.fillRect(x+0, y+3+rLen, 4, 2);
+
+  // Torso (uniform) — slightly taller, with shading
   ctx.fillStyle = color;
-  ctx.fillRect(x-4, y-4, 8, 8);
-  // shading
-  ctx.fillStyle = "rgba(0,0,0,0.25)";
-  ctx.fillRect(x+1, y-4, 3, 8);
-  // head
+  ctx.fillRect(x-4, y-3, 8, 7);
+  // Side shadow
+  ctx.fillStyle = "rgba(0,0,0,0.28)";
+  ctx.fillRect(x+2, y-3, 2, 7);
+  // Left highlight
+  ctx.fillStyle = "rgba(255,255,255,0.15)";
+  ctx.fillRect(x-4, y-3, 1, 7);
+  // Camo blotches
+  ctx.fillStyle = darken(color, 0.65);
+  ctx.fillRect(x-2, y-1, 2, 2);
+  ctx.fillRect(x+1, y+1, 1, 1);
+
+  // Belt
+  ctx.fillStyle = "#3e2723";
+  ctx.fillRect(x-4, y+2, 8, 1);
+  ctx.fillStyle = "#ffd54a";
+  ctx.fillRect(x-1, y+2, 2, 1);
+
+  // Shoulder pads
+  ctx.fillStyle = darken(color, 0.4);
+  ctx.fillRect(x-5, y-3, 1, 2);
+  ctx.fillRect(x+4, y-3, 1, 2);
+
+  // Head (skin tone with shading)
   ctx.fillStyle = "#f3c28b";
-  ctx.fillRect(x-3, y-9, 6, 5);
-  // helmet
-  ctx.fillStyle = color === "#3a7d3a" ? "#234d23" : (color === "#7d3c98" ? "#4a235a" : (color === "#0d4f6e" ? "#06283d" : "#5d4037"));
-  ctx.fillRect(x-4, y-10, 8, 3);
-  ctx.fillStyle = "rgba(255,255,255,0.18)";
-  ctx.fillRect(x-4, y-10, 8, 1);
-  // legs
-  ctx.fillStyle = "#222";
-  ctx.fillRect(x-3, y+4, 2, 4 + (step>0?1:0));
-  ctx.fillRect(x+1, y+4, 2, 4 + (step<0?1:0));
-  // gun
-  ctx.fillStyle = "#222";
-  if (facing < 0) ctx.fillRect(x+1, y-12, 2, 6);
-  else if (facing > 0) ctx.fillRect(x-3, y+6, 2, 6);
-  else ctx.fillRect(x+3, y-2, 6, 2);
+  ctx.fillRect(x-3, y-9, 6, 6);
+  ctx.fillStyle = "rgba(0,0,0,0.2)";
+  ctx.fillRect(x+2, y-9, 1, 6);
+  // Eyes
+  if (facing >= 0){
+    ctx.fillStyle = "#000";
+    ctx.fillRect(x-2, y-7, 1, 1);
+    ctx.fillRect(x+1, y-7, 1, 1);
+    // Mouth
+    ctx.fillStyle = "#8d4a3b";
+    ctx.fillRect(x-1, y-5, 2, 1);
+  }
+
+  // Helmet
+  ctx.fillStyle = helmet;
+  ctx.fillRect(x-4, y-11, 8, 3);
+  ctx.fillStyle = helmetDark;
+  ctx.fillRect(x-4, y-9, 8, 1);
+  ctx.fillStyle = "rgba(255,255,255,0.22)";
+  ctx.fillRect(x-3, y-11, 6, 1);
+  // Strap
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x-3, y-4, 6, 1);
+
+  // Rifle
+  ctx.fillStyle = "#1a1a1a";
+  if (facing < 0){
+    ctx.fillRect(x+1, y-13, 2, 8);   // barrel up
+    ctx.fillStyle = "#5d4037";
+    ctx.fillRect(x+0, y-7, 4, 2);    // wooden stock
+    ctx.fillStyle = "#444";
+    ctx.fillRect(x+1, y-13, 2, 1);   // muzzle hint
+  } else if (facing > 0){
+    ctx.fillRect(x-3, y+5, 2, 7);
+    ctx.fillStyle = "#5d4037";
+    ctx.fillRect(x-4, y+8, 4, 2);
+  } else {
+    ctx.fillRect(x+3, y-2, 7, 2);
+    ctx.fillStyle = "#5d4037";
+    ctx.fillRect(x+1, y-1, 3, 2);
+  }
 }
 
 function drawHeavy(e){
   const x=e.x, y=e.y;
-  ctx.fillStyle = "rgba(0,0,0,0.3)";
-  ctx.beginPath(); ctx.ellipse(x, y+10, 8, 2, 0, 0, Math.PI*2); ctx.fill();
+  const step = Math.sin(e.walkPhase||0) * 1.5;
+  // shadow
+  ctx.fillStyle = "rgba(0,0,0,0.4)";
+  ctx.beginPath(); ctx.ellipse(x, y+12, 9, 3, 0, 0, Math.PI*2); ctx.fill();
+  // legs
+  ctx.fillStyle = darken(e.color, 0.4);
+  ctx.fillRect(x-3, y+4, 2, 5+(step>0?1:0));
+  ctx.fillRect(x+1, y+4, 2, 5+(step<0?1:0));
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(x-4, y+9+(step>0?1:0), 4, 2);
+  ctx.fillRect(x+0, y+9+(step<0?1:0), 4, 2);
   // armor body
   ctx.fillStyle = e.color;
-  ctx.fillRect(x-5, y-5, 10, 10);
+  ctx.fillRect(x-6, y-5, 12, 10);
   ctx.fillStyle = "rgba(0,0,0,0.3)";
-  ctx.fillRect(x+1, y-5, 4, 10);
-  // shoulder pads
-  ctx.fillStyle = "#333";
-  ctx.fillRect(x-7, y-4, 2, 4);
-  ctx.fillRect(x+5, y-4, 2, 4);
+  ctx.fillRect(x+3, y-5, 3, 10);
+  ctx.fillStyle = "rgba(255,255,255,0.13)";
+  ctx.fillRect(x-6, y-5, 12, 1);
+  // armor plates / studs
+  ctx.fillStyle = darken(e.color, 0.5);
+  ctx.fillRect(x-5, y-3, 1, 1);
+  ctx.fillRect(x+4, y-3, 1, 1);
+  ctx.fillRect(x-5, y+2, 1, 1);
+  ctx.fillRect(x+4, y+2, 1, 1);
+  // shoulder armor
+  ctx.fillStyle = darken(e.color, 0.5);
+  ctx.fillRect(x-7, y-5, 2, 4);
+  ctx.fillRect(x+5, y-5, 2, 4);
+  ctx.fillStyle = "rgba(255,255,255,0.18)";
+  ctx.fillRect(x-7, y-5, 2, 1);
+  ctx.fillRect(x+5, y-5, 2, 1);
   // head
   ctx.fillStyle = "#f3c28b";
   ctx.fillRect(x-3, y-10, 6, 5);
-  ctx.fillStyle = "#4a235a";
-  ctx.fillRect(x-4, y-11, 8, 3);
-  ctx.fillStyle = "#222";
-  ctx.fillRect(x-3, y+5, 2, 4);
-  ctx.fillRect(x+1, y+5, 2, 4);
-  // big gun
-  ctx.fillStyle = "#222";
-  ctx.fillRect(x+1, y-14, 3, 8);
-  ctx.fillRect(x, y-7, 5, 2);
+  // visor (heavy soldier wears full visor)
+  ctx.fillStyle = "#111";
+  ctx.fillRect(x-3, y-8, 6, 2);
+  ctx.fillStyle = "#ff5252";
+  ctx.fillRect(x-2, y-7, 1, 1);
+  ctx.fillRect(x+1, y-7, 1, 1);
+  // helmet
+  ctx.fillStyle = darken(e.color, 0.4);
+  ctx.fillRect(x-4, y-12, 8, 3);
+  ctx.fillStyle = "rgba(255,255,255,0.2)";
+  ctx.fillRect(x-3, y-12, 6, 1);
+  // big LMG
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x+1, y-15, 4, 10);
+  ctx.fillStyle = "#5d4037";
+  ctx.fillRect(x+0, y-7, 5, 2);
+  ctx.fillStyle = "#444";
+  ctx.fillRect(x+1, y-15, 4, 1);
 }
 
 function drawRocket(e){
   const x=e.x, y=e.y;
-  ctx.fillStyle = "rgba(0,0,0,0.3)";
-  ctx.beginPath(); ctx.ellipse(x, y+10, 8, 2, 0, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = e.color;
-  ctx.fillRect(x-4, y-4, 8, 8);
-  ctx.fillStyle = "#f3c28b";
-  ctx.fillRect(x-3, y-9, 6, 5);
-  ctx.fillStyle = "#06283d";
-  ctx.fillRect(x-4, y-10, 8, 3);
+  const step = Math.sin(e.walkPhase||0) * 1.5;
+  ctx.fillStyle = "rgba(0,0,0,0.4)";
+  ctx.beginPath(); ctx.ellipse(x, y+11, 8, 2.5, 0, 0, Math.PI*2); ctx.fill();
   // legs
-  ctx.fillStyle = "#222";
-  ctx.fillRect(x-3, y+4, 2, 4);
-  ctx.fillRect(x+1, y+4, 2, 4);
-  // bazooka tube
+  ctx.fillStyle = darken(e.color, 0.45);
+  ctx.fillRect(x-3, y+3, 2, 5+(step>0?1:0));
+  ctx.fillRect(x+1, y+3, 2, 5+(step<0?1:0));
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(x-4, y+8+(step>0?1:0), 4, 2);
+  ctx.fillRect(x+0, y+8+(step<0?1:0), 4, 2);
+  // body
+  ctx.fillStyle = e.color;
+  ctx.fillRect(x-4, y-3, 8, 7);
+  ctx.fillStyle = "rgba(0,0,0,0.28)";
+  ctx.fillRect(x+2, y-3, 2, 7);
+  ctx.fillStyle = "rgba(255,255,255,0.13)";
+  ctx.fillRect(x-4, y-3, 1, 7);
+  // belt
+  ctx.fillStyle = "#3e2723";
+  ctx.fillRect(x-4, y+2, 8, 1);
+  // head
+  ctx.fillStyle = "#f3c28b";
+  ctx.fillRect(x-3, y-9, 6, 6);
+  ctx.fillStyle = "#000";
+  ctx.fillRect(x-2, y-7, 1, 1);
+  ctx.fillRect(x+1, y-7, 1, 1);
+  // helmet (with goggles)
+  ctx.fillStyle = darken(e.color, 0.5);
+  ctx.fillRect(x-4, y-11, 8, 3);
   ctx.fillStyle = "#444";
-  ctx.fillRect(x-2, y-12, 8, 4);
-  ctx.fillStyle = "#ff5252";
-  ctx.fillRect(x+5, y-11, 2, 2);
+  ctx.fillRect(x-4, y-9, 8, 1);
+  // bazooka tube (chunkier, with sight)
+  ctx.fillStyle = "#3a3a3a";
+  ctx.fillRect(x-2, y-13, 9, 5);
+  ctx.fillStyle = "#222";
+  ctx.fillRect(x-2, y-13, 9, 1);
+  ctx.fillStyle = "#666";
+  ctx.fillRect(x-2, y-9, 9, 1);
+  // sight
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(x+1, y-15, 1, 2);
+  // back-blast
+  ctx.fillStyle = "#ff7043";
+  ctx.fillRect(x-4, y-12, 2, 3);
 }
 
 function drawTank(e, friendly=false, stunned=false, big=false){
