@@ -144,16 +144,20 @@ window.SCENES = {
 
   // ==== 西尾線 ====
   'kami-yokosuka': {
-    name: '上横須賀',
-    sky: 'linear-gradient(180deg, #d4d4f0 0%, #a8a8d0 50%, #6b8e23 50%, #3a5a1a 100%)',
-    ground: 'linear-gradient(180deg, #7a9a4a, #4a6a2a)',
-    groundH: 35,
+    name: '上横須賀 (裏路地・治安悪し)',
+    sky: 'linear-gradient(180deg, #3a2a3a 0%, #5a3a4a 40%, #4a3a3a 60%, #1a1a1a 100%)',
+    ground: 'linear-gradient(180deg, #555, #222)',
+    groundH: 32,
     deco: [
-      { e: '🚉', x: 25, y: 35, s: 60 },
-      { e: '🌾', x: 65, y: 60, s: 32 },
-      { e: '🌾', x: 75, y: 62, s: 28 },
-      { e: '🌾', x: 85, y: 60, s: 32 },
-      { e: '🧥', x: 50, y: 50, s: 40 }
+      { e: '🚉', x: 25, y: 35, s: 55 },
+      { e: '💢', x: 50, y: 30, s: 40 },
+      { e: '🚬', x: 60, y: 78, s: 24 },
+      { e: '🚬', x: 30, y: 80, s: 22 },
+      { e: '🍺', x: 75, y: 80, s: 28 },
+      { e: '🍺', x: 88, y: 78, s: 24 },
+      { e: '🧥', x: 75, y: 45, s: 36 },
+      { e: '🪧', x: 15, y: 50, s: 36 },
+      { e: '🌑', x: 80, y: 18, s: 32 }
     ]
   },
   'fukuchi': {
@@ -170,17 +174,20 @@ window.SCENES = {
     ]
   },
   'nishio': {
-    name: '西尾 (抹茶の里)',
-    sky: 'linear-gradient(180deg, #c4e0a0 0%, #d4f0b0 50%, #4a7c2a 50%, #2a5a1a 100%)',
-    ground: 'linear-gradient(180deg, #4a7c2a, #2a5a1a)',
+    name: '西尾 (抹茶の闇・治安最悪)',
+    sky: 'linear-gradient(180deg, #1a2a1a 0%, #2a3a1a 30%, #4a3a1a 60%, #0a1a0a 100%)',
+    ground: 'linear-gradient(180deg, #2a4a1a, #0a2a00)',
     groundH: 40,
     deco: [
-      { e: '🏯', x: 70, y: 25, s: 70 },
+      { e: '🏯', x: 70, y: 25, s: 80 },
+      { e: '🌑', x: 20, y: 18, s: 40 },
       { e: '🍵', x: 25, y: 55, s: 48 },
-      { e: '🍵', x: 45, y: 60, s: 40 },
+      { e: '🔥', x: 45, y: 50, s: 50 },
       { e: '🍵', x: 80, y: 65, s: 36 },
-      { e: '🍡', x: 15, y: 75, s: 32 },
-      { e: '🌿', x: 60, y: 80, s: 28 }
+      { e: '💀', x: 15, y: 75, s: 36 },
+      { e: '⚔️', x: 55, y: 70, s: 40 },
+      { e: '🌿', x: 88, y: 80, s: 32 },
+      { e: '⚡', x: 35, y: 25, s: 36 }
     ]
   },
   'nishio-guchi': {

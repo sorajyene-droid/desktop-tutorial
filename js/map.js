@@ -30,12 +30,17 @@ window.MapUI = (function() {
       else if (st.isFinalBoss) marker = '👑';
       else if (st.isMidBoss) marker = '⚔️';
 
+      // 治安バッジ：danger 1=少し悪い、2=かなり悪い
+      let danger = '';
+      if (st.danger === 1) danger = ' <span class="danger-badge low">⚠ 治安悪し</span>';
+      else if (st.danger >= 2) danger = ' <span class="danger-badge high">💀 治安最悪</span>';
+
       html += `
         <div class="${classes.join(' ')}" data-idx="${idx}">
           <span class="station-marker">${marker}</span>
           <div class="station-info">
-            <div><strong>${st.name}</strong> (${st.kana})</div>
-            <div class="station-enemy">${st.enemy.emoji} ${st.enemy.title}「${st.enemy.name}」 HP:${st.enemy.hp}</div>
+            <div><strong>${st.name}</strong> (${st.kana})${danger}</div>
+            <div class="station-enemy">${st.enemy.emoji} ${st.enemy.title}「${st.enemy.name}」 HP:${st.enemy.hp} / ATK:${st.enemy.atk}</div>
           </div>
         </div>
       `;
