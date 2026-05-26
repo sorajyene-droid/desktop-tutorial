@@ -437,3 +437,38 @@ window.PLAYER_INIT = {
   bontans: [], // 集めたボンタンのenemy.name配列
   defeated: [] // 倒した駅のid配列
 };
+
+// 駅ID → キャラアーキタイプID
+// 無料AI画像生成枠で済むよう、9種類のアーキタイプを駅で使い回す
+window.STATION_ARCHETYPE = {
+  // 基本ヤンキー（多数派）
+  'gamagori':           'yankee-basic',
+  'gamagori-kyoutei':   'yankee-basic',
+  'mikawa-kashima':     'yankee-basic',
+  'katahara':           'yankee-basic',
+  'nishiura':           'yankee-basic',
+  'kami-yokosuka':      'yankee-basic',
+  'fukuchi':            'yankee-basic',
+  'nishio-guchi':       'yankee-basic',
+  'sakuramachi-mae':    'yankee-basic',
+  'yonezu':             'yankee-basic',
+  'minami-sakurai':     'yankee-basic',
+  'hekikai-furui':      'yankee-basic',
+  'minami-anjo':        'yankee-basic',
+  'kita-anjo':          'yankee-basic',
+  // 固有キャラ
+  'higashi-hazu':       'yankee-fisher',
+  'nishi-hazu':         'yankee-fisher',
+  'mikawa-toba':        'yankee-fire',
+  'kodomonokuni':       'kid-boss',
+  'kira-yoshida':       'samurai-yanki',
+  'nishio':             'matcha-boss',
+  'sakurai':            'girl-yankee',
+  'horiuchi-koen':      'big-boss',
+  'shin-anjo':          'final-boss'
+};
+
+// 各駅の enemy にアーキタイプIDを自動付与
+window.STATIONS.forEach(st => {
+  st.enemy.archetypeId = window.STATION_ARCHETYPE[st.id] || 'yankee-basic';
+});

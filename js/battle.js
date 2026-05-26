@@ -2,6 +2,40 @@
 window.Battle = (function() {
   let state = null;
 
+  // アーキタイプ画像があれば<img>、なければ絵文字+色矩形にフォールバック
+  function applyCharSprite(charEl, archetypeId, data) {
+    const body = charEl.querySelector('.char-body');
+    const head = charEl.querySelector('.char-head');
+    const pants = charEl.querySelector('.char-pants');
+
+    // 既存imgを除去
+    const oldImg = charEl.querySelector('img.char-sprite');
+    if (oldImg) oldImg.remove();
+
+    const imgPath = `assets/characters/${archetypeId}.png`;
+    const img = new Image();
+    img.onload = () => {
+      // 画像があれば表示、emoji+矩形は隠す
+      const sprite = document.createElement('img');
+      sprite.src = imgPath;
+      sprite.className = 'char-sprite';
+      charEl.appendChild(sprite);
+      head.style.display = 'none';
+      body.style.display = 'none';
+      pants.style.display = 'none';
+    };
+    img.onerror = () => {
+      // フォールバック：絵文字+CSS矩形
+      head.style.display = '';
+      body.style.display = '';
+      pants.style.display = '';
+      body.style.background = data.color;
+      head.textContent = data.emoji || '😡';
+      pants.style.background = data.bontanColor || '#1a1a1a';
+    };
+    img.src = imgPath;
+  }
+
   function renderScene(stationId) {
     const scene = (window.SCENES && window.SCENES[stationId]) || null;
     const bg = document.getElementById('battle-bg');
@@ -49,12 +83,11 @@ window.Battle = (function() {
     const enemyChar = document.getElementById('enemy-char');
     enemyChar.classList.remove('defeated', 'hit', 'attacking', 'pantsless');
     enemyChar.style.setProperty('--body', enemyData.color);
-    enemyChar.querySelector('.char-body').style.background = enemyData.color;
-    enemyChar.querySelector('.char-head').textContent = enemyData.emoji || '😡';
-    enemyChar.querySelector('.char-pants').style.background = enemyData.bontanColor || '#1a1a1a';
+    applyCharSprite(enemyChar, enemyData.archetypeId, enemyData);
 
     const playerChar = document.getElementById('player-char');
     playerChar.classList.remove('defeated', 'hit', 'attacking', 'pantsless');
+    applyCharSprite(playerChar, 'player', { color: '#4a90e2', emoji: '😤', bontanColor: '#3a3a3a' });
 
     log(`${enemyData.title}「${enemyData.name}」が現れた！`);
     log(`「${enemyData.voice}」`);

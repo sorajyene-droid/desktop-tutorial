@@ -237,6 +237,21 @@ body {
   height: 70px;
   background: linear-gradient(180deg, var(--body, #aa3333) 60%, #ffccaa 60%);
 }
+img.char-sprite {
+  width: 110px;
+  height: auto;
+  max-height: 180px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.fighter.pantsless img.char-sprite {
+  clip-path: inset(0 0 40% 0);
+}
 
 @keyframes attack {
   0%, 100% { transform: scaleX(-1) translateX(0); }
