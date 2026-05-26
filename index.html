@@ -10,12 +10,16 @@
 
 <div id="app">
 
+  <!-- 共通：音量ボタン -->
+  <button id="btn-mute" class="mute-btn" title="ミュート切替">🔊</button>
+
   <!-- タイトル画面 -->
   <section id="screen-title" class="screen active">
     <h1 class="title-main">名鉄ボンタン狩り</h1>
     <p class="title-sub">〜蒲郡から新安城まで・全23駅制覇〜</p>
     <div class="title-art">🚃💢👖💨</div>
-    <button id="btn-start" class="big-btn">ゲーム開始</button>
+    <button id="btn-start" class="big-btn">新しく始める</button>
+    <button id="btn-continue" class="big-btn" style="display:none">続きから</button>
     <p class="title-credit">名鉄蒲郡線 + 西尾線 完全踏破RPG</p>
   </section>
 
@@ -24,13 +28,38 @@
     <header class="map-header">
       <h2>路線図 / 現在地</h2>
       <div class="player-status">
-        <span>HP: <span id="map-hp">100</span></span>
+        <span>HP: <span id="map-hp">100</span>/<span id="map-maxhp">100</span></span>
+        <span>ATK: <span id="map-atk">10</span></span>
         <span>ボンタン: <span id="map-bontans">0</span>本</span>
       </div>
     </header>
     <div id="route-map" class="route-map"></div>
     <div class="map-controls">
       <button id="btn-board" class="big-btn">この駅で電車を降りる</button>
+    </div>
+  </section>
+
+  <!-- 電車移動アニメ画面 -->
+  <section id="screen-train" class="screen">
+    <div class="train-cutscene">
+      <p class="train-from"><span id="train-from-name">蒲郡</span>駅 発</p>
+      <div class="train-track">
+        <div class="train-rail"></div>
+        <div class="train-rail bottom"></div>
+        <div id="train-sprite" class="train-sprite">🚃🚃🚃</div>
+        <div class="train-scenery">
+          <span class="scenery-item">🌳</span>
+          <span class="scenery-item">🏠</span>
+          <span class="scenery-item">⛰</span>
+          <span class="scenery-item">🌾</span>
+          <span class="scenery-item">🏢</span>
+          <span class="scenery-item">🌳</span>
+          <span class="scenery-item">🏯</span>
+          <span class="scenery-item">🌾</span>
+        </div>
+      </div>
+      <p class="train-to"><span id="train-to-name">蒲郡競艇場前</span>駅 着</p>
+      <p class="train-distance">距離 <span id="train-distance">2.3</span>km</p>
     </div>
   </section>
 
@@ -92,6 +121,7 @@
         <div id="bontan-floating" class="floating-pants">👖</div>
       </div>
       <p id="bontan-message" class="bontan-message"></p>
+      <p id="bontan-levelup" class="bontan-levelup"></p>
       <button id="btn-bontan-next" class="big-btn">次の駅へ進む</button>
     </div>
   </section>
@@ -102,6 +132,7 @@
     <p class="defeat-msg">電車に乗って逃げ帰った…</p>
     <div class="defeat-art">😵🚃💨</div>
     <button id="btn-retry" class="big-btn">同じ駅でリベンジ</button>
+    <button id="btn-defeat-title" class="big-btn" style="background:#555">タイトルへ戻る</button>
   </section>
 
   <!-- 勝利画面（全駅クリア） -->
@@ -115,6 +146,8 @@
 
 </div>
 
+<script src="js/audio.js"></script>
+<script src="js/save.js"></script>
 <script src="js/stations.js"></script>
 <script src="js/scenes.js"></script>
 <script src="js/battle.js"></script>

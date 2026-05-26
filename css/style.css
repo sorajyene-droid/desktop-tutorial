@@ -411,3 +411,101 @@ img.char-sprite {
   margin: 20px;
   font-size: 32px;
 }
+
+/* ==== 電車移動アニメ画面 ==== */
+.train-cutscene {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  padding: 20px;
+}
+.train-from, .train-to {
+  font-size: 24px;
+  color: #ffcc00;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+.train-distance {
+  color: #888;
+  font-size: 14px;
+}
+.train-track {
+  position: relative;
+  width: 100%;
+  max-width: 750px;
+  height: 200px;
+  background: linear-gradient(180deg, #87ceeb 0%, #b8e0f7 70%, #7a5a3a 70%, #4a3a2a 100%);
+  border: 3px solid #555;
+  overflow: hidden;
+}
+.train-rail {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 25%;
+  height: 4px;
+  background: #888;
+}
+.train-rail.bottom {
+  bottom: 18%;
+  background: #666;
+}
+.train-sprite {
+  position: absolute;
+  left: -200px;
+  bottom: 22%;
+  font-size: 60px;
+  letter-spacing: -10px;
+  z-index: 3;
+  filter: drop-shadow(2px 2px 0 #000);
+}
+.train-sprite.moving {
+  animation: train-cross 2.5s linear forwards;
+}
+@keyframes train-cross {
+  0% { left: -250px; }
+  100% { left: 100%; }
+}
+.train-scenery {
+  position: absolute;
+  bottom: 28%;
+  left: 0;
+  width: 200%;
+  display: flex;
+  justify-content: space-around;
+  font-size: 40px;
+  animation: scenery-scroll 2.5s linear infinite;
+  z-index: 1;
+}
+@keyframes scenery-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ==== ミュートボタン ==== */
+.mute-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  border: 2px solid #888;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+  cursor: pointer;
+}
+.mute-btn:hover { background: rgba(0,0,0,0.9); border-color: #fff; }
+
+/* ==== レベルアップ表示 ==== */
+.bontan-levelup {
+  font-size: 18px;
+  font-weight: bold;
+  min-height: 26px;
+  letter-spacing: 1px;
+  text-shadow: 2px 2px 0 #000;
+}

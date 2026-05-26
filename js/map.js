@@ -45,6 +45,10 @@ window.MapUI = (function() {
 
     // HPとボンタン数の更新
     document.getElementById('map-hp').textContent = player.hp;
+    const maxHpEl = document.getElementById('map-maxhp');
+    if (maxHpEl) maxHpEl.textContent = player.maxHp;
+    const atkEl = document.getElementById('map-atk');
+    if (atkEl) atkEl.textContent = player.atk;
     document.getElementById('map-bontans').textContent = player.bontans.length;
 
     // 現在駅にスクロール

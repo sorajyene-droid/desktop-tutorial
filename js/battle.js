@@ -128,11 +128,12 @@ window.Battle = (function() {
     fx.classList.add('show');
   }
 
+  // 攻撃倍率（プレイヤーのatkを基準にする）
   const ACTIONS = {
-    punch:   { name: 'パンチ', dmg: 8,  hit: 0.9, cd: 350,  text: 'BAM!' },
-    kick:    { name: 'キック', dmg: 14, hit: 0.7, cd: 600,  text: 'BOOM!' },
-    special: { name: '必殺技', dmg: 25, hit: 0.6, cd: 1200, text: 'WHAM!!' },
-    guard:   { name: 'ガード', dmg: 0,  hit: 1.0, cd: 800,  text: '' }
+    punch:   { name: 'パンチ', mult: 1.0, hit: 0.9, cd: 350,  text: 'BAM!',   sfx: 'punch' },
+    kick:    { name: 'キック', mult: 1.6, hit: 0.7, cd: 600,  text: 'BOOM!',  sfx: 'kick' },
+    special: { name: '必殺技', mult: 2.8, hit: 0.6, cd: 1200, text: 'WHAM!!', sfx: 'special' },
+    guard:   { name: 'ガード', mult: 0,   hit: 1.0, cd: 800,  text: '',       sfx: 'guard' }
   };
 
   function playerAction(actionKey) {
@@ -144,19 +145,23 @@ window.Battle = (function() {
     const playerChar = document.getElementById('player-char');
     playerChar.classList.add('attacking');
     setTimeout(() => playerChar.classList.remove('attacking'), 300);
+    window.Audio8 && window.Audio8.SFX[action.sfx] && window.Audio8.SFX[action.sfx]();
 
     if (actionKey === 'guard') {
       log(`プレイヤーはガード体勢！`);
     } else if (Math.random() < action.hit) {
-      const dmg = action.dmg + Math.floor(Math.random() * 4) - 2;
+      const baseDmg = state.player.atk * action.mult;
+      const dmg = Math.max(1, Math.floor(baseDmg + Math.random() * 4 - 2));
       state.enemy.currentHp -= dmg;
       const enemyChar = document.getElementById('enemy-char');
       enemyChar.classList.add('hit');
       setTimeout(() => enemyChar.classList.remove('hit'), 300);
+      setTimeout(() => window.Audio8 && window.Audio8.SFX.hit(), 80);
       showHit('#enemy-char', action.text);
       log(`プレイヤー ${action.name}！ ${dmg}ダメージ！`);
       checkVictory();
     } else {
+      window.Audio8 && window.Audio8.SFX.miss();
       log(`プレイヤーの${action.name}は外れた…`);
     }
 
@@ -180,11 +185,12 @@ window.Battle = (function() {
 
     if (Math.random() < a.hit) {
       let dmg = Math.floor(a.dmg + Math.random() * 3);
-      if (state.player.guarding) dmg = Math.floor(dmg * 0.2);
+      if (state.player.guarding) dmg = Math.max(1, Math.floor(dmg * 0.2));
       state.player.hp -= dmg;
       const playerChar = document.getElementById('player-char');
       playerChar.classList.add('hit');
       setTimeout(() => playerChar.classList.remove('hit'), 300);
+      setTimeout(() => window.Audio8 && window.Audio8.SFX.hit(), 80);
       showHit('#player-char', a.text);
       log(`${state.enemy.name}の${a.name}！ ${dmg}ダメージ！`);
       checkDefeat();
