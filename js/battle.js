@@ -89,6 +89,9 @@ window.Battle = (function() {
     playerChar.classList.remove('defeated', 'hit', 'attacking', 'pantsless');
     applyCharSprite(playerChar, 'player', { color: '#4a90e2', emoji: '😤', bontanColor: '#3a3a3a' });
 
+    if (enemyData.isRare) {
+      log(`<span style="color:#ff3366; font-weight:bold">⚠️ レアエンカウント！本物の極道が現れた！</span>`);
+    }
     log(`${enemyData.title}「${enemyData.name}」が現れた！`);
     log(`「${enemyData.voice}」`);
     updateUI();

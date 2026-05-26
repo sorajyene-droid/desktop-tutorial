@@ -88,27 +88,39 @@ window.Game = (function() {
   function startBattle() {
     const st = window.STATIONS[currentStationIndex];
     showScreen('screen-battle');
-    // ラスボスは専用SE
-    if (st.isFinalBoss) window.Audio8 && window.Audio8.SFX.final();
+    // レアエンカウント判定（賭博駅など）
+    let enemy = st.enemy;
+    if (st.rareEnemy && Math.random() < (st.rareChance || 0)) {
+      enemy = st.rareEnemy;
+      window.Audio8 && window.Audio8.SFX.final();
+    } else if (st.isFinalBoss) {
+      window.Audio8 && window.Audio8.SFX.final();
+    }
     window.Audio8 && window.Audio8.startBgm('battle');
-    window.Battle.init(st.enemy, onBattleWin, onBattleLose, st.id);
+    window.Battle.init(enemy, onBattleWin, onBattleLose, st.id);
   }
 
   function onBattleWin(enemy) {
     window.Battle.stop();
     window.Audio8 && window.Audio8.SFX.victory();
     player.defeated.push(window.STATIONS[currentStationIndex].id);
-    // レベルアップ：HP上限+10、攻撃力+2、HP全回復
-    const hpBoost = 10;
-    const atkBoost = 2;
+    // レベルアップ：通常HP+10/ATK+2、レアエンカウント勝利は HP+30/ATK+6（豪華）
+    const isRare = !!enemy.isRare;
+    const hpBoost = isRare ? 30 : 10;
+    const atkBoost = isRare ? 6 : 2;
     player.maxHp += hpBoost;
     player.atk += atkBoost;
     player.hp = player.maxHp;
+    // レアならボンタンも複数獲得
+    if (isRare) {
+      // ボンタン狩り演出側で1本は加わるので、ここで追加で1本
+      player.bontans.push({ from: enemy.name + '(裏)', color: '#666' });
+    }
     persist();
-    showBontanCutscene(enemy, hpBoost, atkBoost);
+    showBontanCutscene(enemy, hpBoost, atkBoost, isRare);
   }
 
-  function showBontanCutscene(enemy, hpBoost, atkBoost) {
+  function showBontanCutscene(enemy, hpBoost, atkBoost, isRare) {
     showScreen('screen-bontan');
     window.Audio8 && window.Audio8.stopBgm();
     const victim = document.getElementById('bontan-victim');
@@ -142,7 +154,8 @@ window.Game = (function() {
 
     setTimeout(() => {
       player.bontans.push({ from: enemy.name, color: enemy.bontanColor });
-      document.getElementById('bontan-levelup').innerHTML =
+      const rareTag = isRare ? '<div style="color:#ff3366; font-size:22px; margin-bottom:6px">🎰 レアエンカウント勝利！ボーナス報酬！</div>' : '';
+      document.getElementById('bontan-levelup').innerHTML = rareTag +
         `<span style="color:#0f0">⬆ HP最大値 +${hpBoost} (${player.maxHp})</span>　<span style="color:#ff0">⬆ ATK +${atkBoost} (${player.atk})</span>`;
       persist();
     }, 2400);

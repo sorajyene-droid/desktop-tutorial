@@ -105,6 +105,18 @@
 
 ---
 
+## 9b. yakuza（ヤクザ組長 / レアエンカウント）蒲郡競艇場前
+
+**日本語プロンプト**:
+> 日本のヤクザ組長、白いダブルスーツ、サングラス、オールバックの髪、入墨が首元から覗く、金のチェーン、葉巻、威圧的な表情、全身、正面、競艇場の暗い背景、リアル寄りアニメ調、昭和の極道
+
+**English Prompt**:
+> Japanese yakuza gang boss, white double-breasted suit, dark sunglasses, slicked-back hair, traditional irezumi tattoo visible at neck, gold chain, smoking a cigar, intimidating expression, full body, front view, dim boat racing track background, semi-realistic anime style, Showa era yakuza
+
+→ 保存先: `assets/characters/yakuza.png`
+
+---
+
 ## 9. final-boss（最終ボス総長）★ラスボス・新安城
 
 **日本語プロンプト**:
@@ -138,6 +150,7 @@
 - [ ] `assets/characters/girl-yankee.png`
 - [ ] `assets/characters/big-boss.png`
 - [ ] `assets/characters/final-boss.png`
+- [ ] `assets/characters/yakuza.png` ★レアエンカウント
 - [ ] `assets/characters/player.png`（任意）
 
 ファイル名は **そのままのID** にしてください。コードは自動でロードします。

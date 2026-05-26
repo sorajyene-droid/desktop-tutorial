@@ -19,16 +19,20 @@ window.SCENES = {
     ]
   },
   'gamagori-kyoutei': {
-    name: '蒲郡競艇場前',
-    sky: 'linear-gradient(180deg, #b0c4de 0%, #d0e0f0 60%, #4a4a7f 60%, #1a1a4f 100%)',
-    ground: 'linear-gradient(180deg, #777, #444)',
-    groundH: 28,
+    name: '蒲郡競艇場前 (賭博と裏稼業の街)',
+    sky: 'linear-gradient(180deg, #3a2a4a 0%, #5a3a5a 40%, #2a2a4a 60%, #0a0a2a 100%)',
+    ground: 'linear-gradient(180deg, #555, #222)',
+    groundH: 30,
     deco: [
-      { e: '🏟', x: 50, y: 28, s: 70 },
-      { e: '🚤', x: 30, y: 55, s: 32 },
-      { e: '🚤', x: 70, y: 53, s: 32 },
-      { e: '🎫', x: 15, y: 70, s: 28 },
-      { e: '🎫', x: 80, y: 72, s: 28 }
+      { e: '🏟', x: 50, y: 25, s: 75 },
+      { e: '🚤', x: 25, y: 50, s: 32 },
+      { e: '🎰', x: 75, y: 38, s: 50 },
+      { e: '🎫', x: 15, y: 80, s: 28 },
+      { e: '🎫', x: 35, y: 82, s: 24 },
+      { e: '🎫', x: 65, y: 80, s: 28 },
+      { e: '🍺', x: 80, y: 80, s: 28 },
+      { e: '🚬', x: 50, y: 85, s: 24 },
+      { e: '💴', x: 90, y: 50, s: 36 }
     ]
   },
   'mikawa-kashima': {

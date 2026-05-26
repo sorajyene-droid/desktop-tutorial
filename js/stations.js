@@ -28,6 +28,8 @@ window.STATIONS = [
     kana: 'がまごおりきょうていじょうまえ',
     line: '名鉄蒲郡線',
     distanceFromPrev: 2.3,
+    danger: 2,
+    gambleNote: 'ヤクザ遭遇率30%',
     enemy: {
       name: '賭けマサ',
       title: '万舟券を夢見る男',
@@ -38,7 +40,20 @@ window.STATIONS = [
       emoji: '🚤',
       voice: '今日の予想は…テメェをボコる！',
       bontanColor: '#003d7a'
-    }
+    },
+    rareEnemy: {
+      name: '蒲郡組組長・舟弾の蛇',
+      title: '競艇場に潜む裏稼業',
+      hp: 200,
+      atk: 28,
+      speed: 9,
+      color: '#1a1a1a',
+      emoji: '🐍',
+      voice: '今日のシマ荒らしたな小僧…生きて帰れると思うなよ',
+      bontanColor: '#000',
+      isRare: true
+    },
+    rareChance: 0.3
   },
   {
     id: 'mikawa-kashima',
@@ -441,7 +456,7 @@ window.PLAYER_INIT = {
 };
 
 // 駅ID → キャラアーキタイプID
-// 無料AI画像生成枠で済むよう、9種類のアーキタイプを駅で使い回す
+// 無料AI画像生成枠で済むよう、最少のアーキタイプを駅で使い回す
 window.STATION_ARCHETYPE = {
   // 基本ヤンキー（多数派）
   'gamagori':           'yankee-basic',
@@ -473,4 +488,8 @@ window.STATION_ARCHETYPE = {
 // 各駅の enemy にアーキタイプIDを自動付与
 window.STATIONS.forEach(st => {
   st.enemy.archetypeId = window.STATION_ARCHETYPE[st.id] || 'yankee-basic';
+  // レアエンカウント側にもアーキタイプ
+  if (st.rareEnemy) {
+    st.rareEnemy.archetypeId = 'yakuza';
+  }
 });

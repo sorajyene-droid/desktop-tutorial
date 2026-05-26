@@ -146,6 +146,34 @@ body {
   border: 1px solid #ff6699;
   animation: danger-flash 1.2s infinite;
 }
+.danger-badge.gamble {
+  background: linear-gradient(45deg, #aa00cc, #ff00aa);
+  color: #fff;
+  border: 1px solid #ff66ff;
+  animation: gamble-flash 1.5s infinite;
+}
+@keyframes gamble-flash {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.5) saturate(1.5); }
+}
+.rare-enemy {
+  font-size: 11px;
+  color: #ff66cc;
+  margin-top: 2px;
+  padding-left: 8px;
+  font-style: italic;
+}
+.rare-chance {
+  display: inline-block;
+  background: #6a006a;
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  margin-left: 4px;
+}
+.station-row.current .rare-enemy { color: #5a0033; }
+.station-row.defeated .rare-enemy { color: #555; }
 @keyframes danger-flash {
   0%, 100% { box-shadow: 0 0 0 0 rgba(255, 0, 51, 0.7); }
   50% { box-shadow: 0 0 8px 2px rgba(255, 0, 51, 0.9); }

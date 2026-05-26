@@ -34,13 +34,26 @@ window.MapUI = (function() {
       let danger = '';
       if (st.danger === 1) danger = ' <span class="danger-badge low">⚠ 治安悪し</span>';
       else if (st.danger >= 2) danger = ' <span class="danger-badge high">💀 治安最悪</span>';
+      // ガチャ駅（レアエンカウント）バッジ
+      let gamble = '';
+      if (st.rareEnemy) {
+        const pct = Math.round((st.rareChance || 0) * 100);
+        gamble = ` <span class="danger-badge gamble">🎰 ${st.gambleNote || 'レア出現'} (${pct}%)</span>`;
+      }
+
+      // レアエンカウント情報
+      let rareInfo = '';
+      if (st.rareEnemy) {
+        rareInfo = `<div class="rare-enemy">└ ${st.rareEnemy.emoji} <strong>${st.rareEnemy.name}</strong> HP:${st.rareEnemy.hp} / ATK:${st.rareEnemy.atk} <span class="rare-chance">出現${Math.round((st.rareChance||0)*100)}%</span></div>`;
+      }
 
       html += `
         <div class="${classes.join(' ')}" data-idx="${idx}">
           <span class="station-marker">${marker}</span>
           <div class="station-info">
-            <div><strong>${st.name}</strong> (${st.kana})${danger}</div>
+            <div><strong>${st.name}</strong> (${st.kana})${danger}${gamble}</div>
             <div class="station-enemy">${st.enemy.emoji} ${st.enemy.title}「${st.enemy.name}」 HP:${st.enemy.hp} / ATK:${st.enemy.atk}</div>
+            ${rareInfo}
           </div>
         </div>
       `;
