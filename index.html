@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#0a0a1a" />
+<title>あいダッシュ — スマート待ち受け</title>
+<style>
+  :root {
+    --fg: #ffffff;
+    --muted: rgba(255, 255, 255, 0.72);
+    --faint: rgba(255, 255, 255, 0.5);
+    --card: rgba(255, 255, 255, 0.1);
+    --stroke: rgba(255, 255, 255, 0.18);
+    --safe-t: env(safe-area-inset-top, 0px);
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: #0a0a1a;
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Noto Sans JP", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+
+  /* 動く背景（オーロラのグラデーション） */
+  #bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: linear-gradient(135deg, #1a1a3e, #2d1b4e, #1e3a5f, #0a0a1a);
+    background-size: 400% 400%;
+    animation: aurora 22s ease infinite;
+    transition: background 2s ease;
+  }
+  @keyframes aurora {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  /* ぼんやり光るオーブ */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: 0.55;
+    z-index: 1;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+  .orb.a { width: 60vmin; height: 60vmin; background: #ff6ec7; top: -10vmin; left: -10vmin; animation: float1 18s ease-in-out infinite; }
+  .orb.b { width: 50vmin; height: 50vmin; background: #4ea8ff; bottom: -12vmin; right: -8vmin; animation: float2 21s ease-in-out infinite; }
+  .orb.c { width: 40vmin; height: 40vmin; background: #7cffb2; top: 40%; right: 20%; animation: float3 26s ease-in-out infinite; }
+  @keyframes float1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(8vmin,12vmin)} }
+  @keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-10vmin,-8vmin)} }
+  @keyframes float3 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-6vmin,10vmin)} }
+
+  #stars { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+
+  /* メイン */
+  main {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: calc(var(--safe-t) + 22px) 22px calc(var(--safe-b) + 18px);
+  }
+
+  .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .greeting {
+    font-size: clamp(20px, 6vw, 30px);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.3;
+  }
+  .greeting .emoji { font-size: 1.1em; }
+  .greet-sub { font-size: clamp(12px, 3.4vw, 15px); color: var(--muted); margin-top: 4px; font-weight: 500; }
+
+  /* 天気カード */
+  .weather {
+    background: var(--card);
+    border: 1px solid var(--stroke);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-radius: 20px;
+    padding: 12px 16px;
+    text-align: center;
+    min-width: 96px;
+    flex-shrink: 0;
+  }
+  .weather .icon { font-size: 30px; line-height: 1; }
+  .weather .temp { font-size: 22px; font-weight: 700; margin-top: 2px; }
+  .weather .desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .weather .loc  { font-size: 10px; color: var(--faint); margin-top: 4px; max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* 時計 */
+  .clockwrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .clock {
+    font-size: clamp(64px, 23vw, 150px);
+    font-weight: 200;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 4px 40px rgba(120, 160, 255, 0.4);
+    display: flex;
+    align-items: baseline;
+  }
+  .clock .sep { animation: blink 2s step-start infinite; }
+  @keyframes blink { 50% { opacity: 0.35; } }
+  .clock .sec {
+    font-size: 0.34em;
+    font-weight: 300;
+    color: var(--muted);
+    margin-left: 0.12em;
+    align-self: flex-start;
+    margin-top: 0.18em;
+  }
+  .date {
+    font-size: clamp(15px, 4.4vw, 22px);
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .date .dow { font-weight: 700; }
+
+  /* メッセージ・ティッカー（サイネージ感） */
+  .ticker {
+    background: var(--card);
+    border: 1px solid var(--stroke);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-radius: 18px;
+    padding: 14px 18px;
+    text-align: center;
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ticker .msg {
+    font-size: clamp(14px, 4vw, 18px);
+    font-weight: 500;
+    line-height: 1.5;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .ticker .msg.out { opacity: 0; transform: translateY(8px); }
+
+  /* 下部ツールバー */
+  .bar {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .btn {
+    background: var(--card);
+    border: 1px solid var(--stroke);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    color: var(--fg);
+    border-radius: 14px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.2s ease;
+  }
+  .btn:active { transform: scale(0.94); background: rgba(255,255,255,0.2); }
+
+  .hint {
+    position: fixed;
+    bottom: calc(var(--safe-b) + 6px);
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 10px;
+    color: var(--faint);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* フェードイン */
+  .fade { animation: fadeIn 1.2s ease both; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+  <div id="bg"></div>
+  <div class="orb a"></div>
+  <div class="orb b"></div>
+  <div class="orb c"></div>
+  <canvas id="stars"></canvas>
+
+  <main>
+    <div class="top fade">
+      <div>
+        <div class="greeting" id="greeting">こんにちは <span class="emoji">🌤️</span></div>
+        <div class="greet-sub" id="greetSub">今日もおつかれさまです</div>
+      </div>
+      <div class="weather" id="weather">
+        <div class="icon">⏳</div>
+        <div class="temp">--°</div>
+        <div class="desc">読み込み中</div>
+        <div class="loc">位置情報を取得</div>
+      </div>
+    </div>
+
+    <div class="clockwrap fade">
+      <div class="clock" id="clock">--<span class="sep">:</span>--</div>
+      <div class="date" id="date">----年--月--日</div>
+    </div>
+
+    <div class="ticker fade">
+      <div class="msg" id="ticker">スマホを立てかけて、置き時計や待ち受けとしてお使いください ✨</div>
+    </div>
+
+    <div class="bar fade">
+      <button class="btn" id="fsBtn">⛶ 全画面</button>
+      <button class="btn" id="themeBtn">🎨 テーマ</button>
+      <button class="btn" id="msgBtn">＋ ひとこと</button>
+    </div>
+  </main>
+
+  <div class="hint">画面タップで全画面 ／ 自動で更新されます</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ====== 1. 時計と日付 ====== */
+  var WDAY = ["日", "月", "火", "水", "木", "金", "土"];
+  var clockEl = document.getElementById("clock");
+  var dateEl = document.getElementById("date");
+
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+
+  function tick() {
+    var d = new Date();
+    var h = pad(d.getHours());
+    var m = pad(d.getMinutes());
+    var s = pad(d.getSeconds());
+    clockEl.innerHTML = h + '<span class="sep">:</span>' + m +
+      '<span class="sec">' + s + '</span>';
+    dateEl.innerHTML = d.getFullYear() + "年" + (d.getMonth() + 1) + "月" + d.getDate() +
+      '日 <span class="dow">(' + WDAY[d.getDay()] + ')</span>';
+    updateGreeting(d.getHours());
+  }
+
+  /* ====== 2. 時間帯であいさつが変わる ====== */
+  var greetEl = document.getElementById("greeting");
+  var greetSubEl = document.getElementById("greetSub");
+  var lastBand = -1;
+  function updateGreeting(hour) {
+    var band, text, emoji, sub;
+    if (hour < 5)       { band = 0; text = "おやすみなさい"; emoji = "🌙"; sub = "夜更かしほどほどに"; }
+    else if (hour < 11) { band = 1; text = "おはようございます"; emoji = "🌅"; sub = "今日もいい一日になりますように"; }
+    else if (hour < 17) { band = 2; text = "こんにちは"; emoji = "🌤️"; sub = "今日もおつかれさまです"; }
+    else if (hour < 22) { band = 3; text = "こんばんは"; emoji = "🌆"; sub = "ゆっくり過ごしてくださいね"; }
+    else                { band = 4; text = "こんばんは"; emoji = "🌙"; sub = "そろそろ休む時間です"; }
+    if (band === lastBand) return;
+    lastBand = band;
+    greetEl.innerHTML = text + ' <span class="emoji">' + emoji + "</span>";
+    greetSubEl.textContent = sub;
+  }
+
+  /* ====== 3. 天気（Open-Meteo / APIキー不要） ====== */
+  var weatherEl = document.getElementById("weather");
+  // WMO天気コード → 絵文字・日本語
+  var WMO = {
+    0:["☀️","快晴"],1:["🌤️","晴れ"],2:["⛅","薄曇り"],3:["☁️","くもり"],
+    45:["🌫️","霧"],48:["🌫️","霧氷"],51:["🌦️","霧雨"],53:["🌦️","霧雨"],55:["🌧️","霧雨"],
+    61:["🌧️","小雨"],63:["🌧️","雨"],65:["🌧️","強い雨"],66:["🌧️","凍雨"],67:["🌧️","凍雨"],
+    71:["🌨️","小雪"],73:["🌨️","雪"],75:["❄️","大雪"],77:["🌨️","霧雪"],
+    80:["🌦️","にわか雨"],81:["🌧️","にわか雨"],82:["⛈️","激しい雨"],
+    85:["🌨️","にわか雪"],86:["❄️","にわか雪"],
+    95:["⛈️","雷雨"],96:["⛈️","雷雨"],99:["⛈️","激しい雷雨"]
+  };
+
+  function renderWeather(temp, code, locName) {
+    var w = WMO[code] || ["🌡️", "—"];
+    weatherEl.innerHTML =
+      '<div class="icon">' + w[0] + '</div>' +
+      '<div class="temp">' + Math.round(temp) + '°</div>' +
+      '<div class="desc">' + w[1] + '</div>' +
+      '<div class="loc">' + locName + '</div>';
+  }
+
+  function fetchWeather(lat, lon, locName) {
+    var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat +
+      "&longitude=" + lon + "&current=temperature_2m,weather_code&timezone=auto";
+    fetch(url)
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        var c = j.current;
+        renderWeather(c.temperature_2m, c.weather_code, locName);
+      })
+      .catch(function () {
+        weatherEl.innerHTML = '<div class="icon">📡</div><div class="temp">--°</div>' +
+          '<div class="desc">取得失敗</div><div class="loc">オフライン?</div>';
+      });
+  }
+
+  function initWeather() {
+    // 既定は東京。位置情報が取れれば現在地に。
+    var TOKYO = { lat: 35.68, lon: 139.76, name: "東京" };
+    if (!navigator.geolocation) { fetchWeather(TOKYO.lat, TOKYO.lon, TOKYO.name); return; }
+    navigator.geolocation.getCurrentPosition(
+      function (p) { fetchWeather(p.coords.latitude.toFixed(2), p.coords.longitude.toFixed(2), "現在地"); },
+      function () { fetchWeather(TOKYO.lat, TOKYO.lon, TOKYO.name); },
+      { timeout: 8000, maximumAge: 600000 }
+    );
+  }
+
+  /* ====== 4. メッセージ・ティッカー（サイネージ感） ====== */
+  var tickerEl = document.getElementById("ticker");
+  var defaultMsgs = [
+    "スマホを立てかけて、置き時計や待ち受けとしてお使いください ✨",
+    "深呼吸を3回。肩の力を抜いてリラックス 🌿",
+    "水分とりましたか？こまめな水分補給を 💧",
+    "今日できたことを、ひとつ思い出してみよう 🌟",
+    "少し目を休めて、遠くを見てみましょう 👀",
+    "笑顔は最高のアクセサリー 😊",
+    "うまくいかない日も、ちゃんと前に進んでいます 🚶",
+    "ありがとうを、誰かに伝えてみる日 💐"
+  ];
+  // ユーザー追加メッセージは端末に保存
+  var userMsgs = [];
+  try { userMsgs = JSON.parse(localStorage.getItem("aiDashMsgs") || "[]"); } catch (e) {}
+
+  function allMsgs() { return userMsgs.length ? userMsgs.concat(defaultMsgs) : defaultMsgs; }
+
+  var msgIdx = 0;
+  function rotateMsg() {
+    var list = allMsgs();
+    msgIdx = (msgIdx + 1) % list.length;
+    tickerEl.classList.add("out");
+    setTimeout(function () {
+      tickerEl.textContent = list[msgIdx];
+      tickerEl.classList.remove("out");
+    }, 600);
+  }
+
+  document.getElementById("msgBtn").addEventListener("click", function () {
+    var t = prompt("待ち受けに流すメッセージを入力（この端末に保存されます）");
+    if (t && t.trim()) {
+      userMsgs.unshift(t.trim());
+      try { localStorage.setItem("aiDashMsgs", JSON.stringify(userMsgs)); } catch (e) {}
+      tickerEl.classList.add("out");
+      setTimeout(function () {
+        tickerEl.textContent = t.trim();
+        tickerEl.classList.remove("out");
+        msgIdx = 0;
+      }, 600);
+    }
+  });
+
+  /* ====== 5. テーマ切り替え ====== */
+  var themes = [
+    "linear-gradient(135deg, #1a1a3e, #2d1b4e, #1e3a5f, #0a0a1a)", // 夜
+    "linear-gradient(135deg, #ff9a8b, #ff6a88, #ff99ac, #fcb69f)", // 夕焼け
+    "linear-gradient(135deg, #0f2027, #203a43, #2c5364, #0f2027)", // 深海
+    "linear-gradient(135deg, #134e5e, #71b280, #134e5e, #0b3d2e)", // 森
+    "linear-gradient(135deg, #41295a, #2F0743, #5614b0, #1a0033)"  // 宇宙
+  ];
+  var themeIdx = 0;
+  try { themeIdx = parseInt(localStorage.getItem("aiDashTheme") || "0", 10) || 0; } catch (e) {}
+  var bgEl = document.getElementById("bg");
+  function applyTheme() {
+    bgEl.style.background = themes[themeIdx];
+    bgEl.style.backgroundSize = "400% 400%";
+  }
+  applyTheme();
+  document.getElementById("themeBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    themeIdx = (themeIdx + 1) % themes.length;
+    applyTheme();
+    try { localStorage.setItem("aiDashTheme", themeIdx); } catch (e2) {}
+  });
+
+  /* ====== 6. 全画面 ====== */
+  function toggleFs() {
+    var el = document.documentElement;
+    if (!document.fullscreenElement) {
+      (el.requestFullscreen || el.webkitRequestFullscreen || function(){}).call(el);
+    } else {
+      (document.exitFullscreen || document.webkitExitFullscreen || function(){}).call(document);
+    }
+  }
+  document.getElementById("fsBtn").addEventListener("click", function (e) { e.stopPropagation(); toggleFs(); });
+  // 画面タップでも全画面（ボタン以外）
+  document.querySelector("main").addEventListener("click", function (e) {
+    if (e.target.closest(".btn")) return;
+    toggleFs();
+  });
+
+  /* ====== 7. 星のきらめき（canvas） ====== */
+  var canvas = document.getElementById("stars");
+  var ctx = canvas.getContext("2d");
+  var stars = [];
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    var count = Math.min(120, Math.floor(canvas.width * canvas.height / 9000));
+    stars = [];
+    for (var i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.4 + 0.3,
+        a: Math.random(),
+        sp: Math.random() * 0.02 + 0.005
+      });
+    }
+  }
+  function drawStars() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (var i = 0; i < stars.length; i++) {
+      var s = stars[i];
+      s.a += s.sp;
+      var alpha = 0.3 + Math.abs(Math.sin(s.a)) * 0.7;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,255,255," + alpha + ")";
+      ctx.fill();
+    }
+    requestAnimationFrame(drawStars);
+  }
+  window.addEventListener("resize", resize);
+
+  /* ====== 8. 画面が消えないように（対応端末のみ） ====== */
+  function keepAwake() {
+    if ("wakeLock" in navigator) {
+      navigator.wakeLock.request("screen").catch(function () {});
+    }
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") keepAwake();
+  });
+
+  /* ====== 起動 ====== */
+  tick();
+  setInterval(tick, 1000);
+  initWeather();
+  setInterval(initWeather, 15 * 60 * 1000); // 15分ごとに天気更新
+  setInterval(rotateMsg, 7000);             // 7秒ごとにメッセージ
+  resize();
+  drawStars();
+  keepAwake();
+})();
+</script>
+</body>
+</html>

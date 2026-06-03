@@ -1,5 +1,32 @@
-# Welcome to GitHub Desktop!
+# あいダッシュ ✨ — スマート待ち受けダッシュボード
 
-This is your README. READMEs are where you can communicate what your project is and how to use it.
+スマホを立てかけておくだけで「置き時計＋デジタルサイネージ」になる、1枚のHTMLで動く待ち受けアプリです。サーバー不要・インストール不要。ブラウザで `index.html` を開くだけで動きます。
 
-Write your name on line 6, save it, and then head back to GitHub Desktop.
+## できること
+
+- 🕐 **大きなライブ時計**（秒まで・自動更新）と和暦風の日付・曜日表示
+- 🌅 **時間帯であいさつが変わる**（おはよう／こんにちは／こんばんは／おやすみ）
+- 🌤️ **今いる場所の天気**（位置情報を許可すると現在地、なければ東京。APIキー不要の Open-Meteo を使用）
+- 💬 **メッセージが流れるサイネージ表示**（「＋ひとこと」で自分の言葉を追加でき、端末に保存されます）
+- 🎨 **5種類のテーマ**（夜空・夕焼け・深海・森・宇宙）をタップで切り替え
+- ⛶ **全画面表示**（画面タップでON/OFF）＋ 対応端末では画面が消えにくくなる Wake Lock
+
+すべて端末の中だけで完結し、サーバーには何も送りません。
+
+## スマホでの使い方
+
+1. このリポジトリの `index.html` をスマホで開きます
+   （例：ファイルを端末に保存して開く／GitHub Pages を有効にして公開URLを開く）
+2. 「⛶ 全画面」または画面タップでフルスクリーンに
+3. スマホスタンドに立てかければ、おしゃれな置き時計＆サイネージの完成
+
+### GitHub Pages で公開する場合（おすすめ）
+
+リポジトリの **Settings → Pages → Branch** を `claude/mobile-usability-2RKdk`（または main）に設定すると、
+`https://<ユーザー名>.github.io/desktop-tutorial/` でスマホからすぐ開けます。ホーム画面に追加すればアプリのように使えます。
+
+## 技術メモ
+
+- 依存ライブラリなしの素のHTML / CSS / JavaScript（1ファイル）
+- 天気: [Open-Meteo](https://open-meteo.com/)（無料・APIキー不要）
+- アニメーション: CSSグラデーション＋Canvasの星空
