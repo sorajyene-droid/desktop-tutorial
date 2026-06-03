@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>板売買デモ (order book)</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 2rem; background:#0e1116; color:#e6edf3; }
+  h1 { font-size: 1.2rem; }
+  .panel { display:flex; gap:2rem; flex-wrap:wrap; }
+  table { border-collapse: collapse; min-width: 200px; }
+  th, td { padding: .25rem .75rem; text-align:right; }
+  .ask td { color:#ff7b72; }
+  .bid td { color:#3fb950; }
+  .spread { text-align:center; color:#8b949e; padding:.5rem 0; }
+  form { margin-top:1rem; display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+  input, select, button { padding:.4rem; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:6px; }
+  button { cursor:pointer; }
+  #log { margin-top:1rem; font-size:.85rem; color:#8b949e; max-height:160px; overflow:auto; }
+  code { color:#79c0ff; }
+</style>
+</head>
+<body>
+<h1>板売買デモ — 単一銘柄の板 (price/time priority)</h1>
+<p>これはブラウザ単体で動く、約定ロジックのミニ実装デモです。サーバー(api.py)とは独立しています。
+本物の板は <code>/ws/{symbol}</code> から配信されます。</p>
+
+<div class="panel">
+  <div>
+    <h2>板 (SYMBOL: X)</h2>
+    <table id="book"><tbody></tbody></table>
+  </div>
+  <div>
+    <h2>発注</h2>
+    <form id="order">
+      <select id="side">
+        <option value="buy">買い</option>
+        <option value="sell">売り</option>
+      </select>
+      <input id="price" type="number" placeholder="価格" value="100" min="1" />
+      <input id="qty" type="number" placeholder="数量" value="10" min="1" />
+      <button type="submit">発注</button>
+    </form>
+    <div id="log"></div>
+  </div>
+</div>
+
+<script>
+// --- minimal in-browser matching engine (price priority, time priority) ---
+let seq = 1;
+const bids = []; // {price, qty, seq}
+const asks = [];
+
+function add(side, price, qty) {
+  const incoming = { price, qty, seq: seq++ };
+  const book = side === 'buy' ? asks : bids;  // match against opposite
+  // sort opposite: buy matches lowest ask; sell matches highest bid
+  const trades = [];
+  while (incoming.qty > 0 && book.length) {
+    book.sort((a, b) => side === 'buy'
+      ? (a.price - b.price) || (a.seq - b.seq)
+      : (b.price - a.price) || (a.seq - b.seq));
+    const best = book[0];
+    if (side === 'buy' && best.price > price) break;
+    if (side === 'sell' && best.price < price) break;
+    const m = Math.min(incoming.qty, best.qty);
+    trades.push({ price: best.price, qty: m });
+    incoming.qty -= m; best.qty -= m;
+    if (best.qty === 0) book.shift();
+  }
+  if (incoming.qty > 0) (side === 'buy' ? bids : asks).push(incoming);
+  return trades;
+}
+
+function levels(book, desc) {
+  const agg = {};
+  book.forEach(o => { agg[o.price] = (agg[o.price] || 0) + o.qty; });
+  return Object.keys(agg).map(Number).sort((a, b) => desc ? b - a : a - b)
+    .map(p => ({ price: p, qty: agg[p] }));
+}
+
+function render() {
+  const tbody = document.querySelector('#book tbody');
+  const a = levels(asks, true);   // asks high->low for display
+  const b = levels(bids, true);   // bids high->low
+  let html = '';
+  a.forEach(l => html += `<tr class="ask"><td></td><td>${l.price}</td><td>${l.qty}</td></tr>`);
+  html += `<tr class="spread"><td colspan="3">— spread —</td></tr>`;
+  b.forEach(l => html += `<tr class="bid"><td>${l.qty}</td><td>${l.price}</td><td></td></tr>`);
+  tbody.innerHTML = html;
+}
+
+function log(msg) {
+  const el = document.getElementById('log');
+  el.innerHTML = `<div>${msg}</div>` + el.innerHTML;
+}
+
+document.getElementById('order').addEventListener('submit', e => {
+  e.preventDefault();
+  const side = document.getElementById('side').value;
+  const price = parseInt(document.getElementById('price').value, 10);
+  const qty = parseInt(document.getElementById('qty').value, 10);
+  const trades = add(side, price, qty);
+  trades.forEach(t => log(`約定: ${t.qty} @ ${t.price}`));
+  render();
+});
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>チャート版デモ (candles + MA)</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 1.5rem; background:#0e1116; color:#e6edf3; }
+  h1 { font-size: 1.2rem; }
+  .row { display:flex; gap:2rem; flex-wrap:wrap; align-items:flex-start; }
+  canvas { background:#161b22; border:1px solid #30363d; border-radius:8px; }
+  input, select, button { padding:.4rem; background:#161b22; color:#e6edf3; border:1px solid #30363d; border-radius:6px; }
+  button { cursor:pointer; }
+  .tf button.active { border-color:#79c0ff; color:#79c0ff; }
+  fieldset { border:1px solid #30363d; border-radius:8px; margin-top:1rem; }
+  legend { color:#8b949e; }
+  #info { color:#8b949e; max-width:420px; }
+  #book { font-variant-numeric: tabular-nums; }
+  .ask { color:#ff7b72; } .bid { color:#3fb950; }
+  label { display:block; margin:.3rem 0; }
+  #status { color:#8b949e; font-size:.85rem; }
+</style>
+</head>
+<body>
+<h1>チャート版デモ — ローソク足 + 移動平均 + 発注 (api.py 連動)</h1>
+<p id="status">API: <span id="base"></span> / 銘柄: <input id="symbol" value="X" size="6" />
+   <button id="reload">再読込</button></p>
+
+<div class="row">
+  <div>
+    <div class="tf">
+      <button data-tf="1m">1m</button>
+      <button data-tf="5m">5m</button>
+      <button data-tf="1h">1h</button>
+      <button data-tf="1d" class="active">1d</button>
+      <button data-tf="1w">1w</button>
+      <button data-tf="1mo">1mo</button>
+    </div>
+    <canvas id="chart" width="640" height="360"></canvas>
+    <div id="info"></div>
+  </div>
+
+  <div>
+    <fieldset>
+      <legend>ログイン</legend>
+      <label>email <input id="email" value="b@x.com" /></label>
+      <label>login pw <input id="lpw" type="password" value="lp" /></label>
+      <button id="login">ログイン</button>
+      <span id="who"></span>
+    </fieldset>
+
+    <fieldset>
+      <legend>発注</legend>
+      <label>取引PW <input id="tpw" type="password" value="tp" /></label>
+      <label>売買
+        <select id="side"><option value="buy">買い</option><option value="sell">売り</option></select>
+      </label>
+      <label>価格 <input id="price" type="number" value="100" /></label>
+      <label>数量 <input id="qty" type="number" value="1" /></label>
+      <button id="order">発注</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>板 (live)</legend>
+      <div id="book">未接続</div>
+    </fieldset>
+  </div>
+</div>
+
+<script>
+const BASE = location.origin.startsWith('http') && location.port ? location.origin : 'http://127.0.0.1:8000';
+document.getElementById('base').textContent = BASE;
+let token = null;
+let timeframe = '1d';
+let ws = null;
+
+function sym() { return document.getElementById('symbol').value.trim(); }
+
+async function loadChart() {
+  const s = sym();
+  const r = await fetch(`${BASE}/chart/${s}?timeframe=${timeframe}`);
+  const data = await r.json();
+  drawChart(data);
+  const info = await fetch(`${BASE}/symbol/${s}`);
+  const el = document.getElementById('info');
+  if (info.ok) { const i = await info.json(); el.innerHTML = `<b>${i.name||s}</b><br>${i.description||''}`; }
+  else el.textContent = '(銘柄説明なし)';
+}
+
+function drawChart(data) {
+  const cv = document.getElementById('chart'), ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  const candles = data.candles || [];
+  if (!candles.length) { ctx.fillStyle = '#8b949e'; ctx.fillText('データなし', 20, 20); return; }
+  const hi = Math.max(...candles.map(c => c.high));
+  const lo = Math.min(...candles.map(c => c.low));
+  const pad = 30, W = cv.width - pad * 2, H = cv.height - pad * 2;
+  const x = i => pad + (candles.length === 1 ? W / 2 : i * W / (candles.length - 1));
+  const y = p => pad + H - (hi === lo ? H / 2 : (p - lo) / (hi - lo) * H);
+  const cw = Math.max(2, W / candles.length * 0.6);
+  candles.forEach((c, i) => {
+    ctx.strokeStyle = ctx.fillStyle = c.close >= c.open ? '#3fb950' : '#ff7b72';
+    ctx.beginPath(); ctx.moveTo(x(i), y(c.high)); ctx.lineTo(x(i), y(c.low)); ctx.stroke();
+    const top = y(Math.max(c.open, c.close)), bot = y(Math.min(c.open, c.close));
+    ctx.fillRect(x(i) - cw / 2, top, cw, Math.max(1, bot - top));
+  });
+  // moving averages
+  const colors = ['#79c0ff', '#d2a8ff', '#ffa657'];
+  Object.keys(data.ma || {}).forEach((k, idx) => {
+    ctx.strokeStyle = colors[idx % colors.length]; ctx.beginPath(); let started = false;
+    data.ma[k].forEach((v, i) => {
+      if (v == null) return;
+      const px = x(i), py = y(v);
+      if (!started) { ctx.moveTo(px, py); started = true; } else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+  });
+}
+
+function connectWS() {
+  if (ws) ws.close();
+  const wsBase = BASE.replace('http', 'ws');
+  ws = new WebSocket(`${wsBase}/ws/${sym()}`);
+  ws.onmessage = ev => {
+    const msg = JSON.parse(ev.data);
+    renderBook(msg.depth);
+    if (msg.trades && msg.trades.length) loadChart();
+  };
+  ws.onclose = () => { document.getElementById('book').textContent = '切断'; };
+}
+
+function renderBook(depth) {
+  const el = document.getElementById('book');
+  const asks = (depth.asks || []).slice().reverse().map(([p, q]) => `<div class="ask">${q} @ ${p}</div>`).join('');
+  const bids = (depth.bids || []).map(([p, q]) => `<div class="bid">${q} @ ${p}</div>`).join('');
+  el.innerHTML = asks + `<div>— last ${depth.last_price ?? '-'} —</div>` + bids;
+}
+
+document.querySelectorAll('.tf button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tf button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); timeframe = b.dataset.tf; loadChart();
+}));
+
+document.getElementById('reload').addEventListener('click', () => { loadChart(); connectWS(); });
+
+document.getElementById('login').addEventListener('click', async () => {
+  const r = await fetch(`${BASE}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.value, login_password: lpw.value }) });
+  const d = await r.json();
+  if (r.ok) { token = d.token; who.textContent = '✓ ' + email.value; }
+  else who.textContent = '✗ ' + (d.detail || 'login failed');
+});
+
+document.getElementById('order').addEventListener('click', async () => {
+  if (!token) { alert('先にログインしてください'); return; }
+  const r = await fetch(`${BASE}/order`, { method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ trade_password: tpw.value, symbol: sym(),
+      side: side.value, price: parseInt(price.value, 10), quantity: parseInt(qty.value, 10) }) });
+  const d = await r.json();
+  if (!r.ok) alert('発注エラー: ' + JSON.stringify(d.detail));
+});
+
+loadChart(); connectWS();
+</script>
+</body>
+</html>
