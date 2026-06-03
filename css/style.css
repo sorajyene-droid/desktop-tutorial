@@ -1,0 +1,564 @@
+/* 名鉄ボンタン狩り - スタイル */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'M PLUS 1p', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif;
+  background: #1a1a1a;
+  color: #fff;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  user-select: none;
+}
+
+#app {
+  width: 100%;
+  max-width: 900px;
+  height: 100vh;
+  max-height: 700px;
+  position: relative;
+  background: #000;
+  border: 4px solid #555;
+  box-shadow: 0 0 40px rgba(255,100,0,0.3);
+  overflow: hidden;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.screen.active { display: flex; }
+
+.big-btn {
+  background: linear-gradient(180deg, #ff6600, #cc3300);
+  color: white;
+  border: 3px solid #fff;
+  padding: 16px 40px;
+  font-size: 22px;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 8px;
+  margin: 10px;
+  font-family: inherit;
+  box-shadow: 0 4px 0 #802000;
+  transition: transform 0.1s;
+}
+.big-btn:hover { transform: translateY(-2px); }
+.big-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #802000; }
+
+/* ==== タイトル画面 ==== */
+.title-main {
+  font-size: 54px;
+  background: linear-gradient(180deg, #ffcc00 0%, #ff6600 50%, #cc0000 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 4px 4px 0 #000;
+  margin-bottom: 10px;
+  letter-spacing: 4px;
+}
+.title-sub { font-size: 18px; color: #ffcc66; margin-bottom: 30px; }
+.title-art { font-size: 60px; margin: 20px 0; }
+.title-credit { margin-top: 30px; font-size: 12px; color: #666; }
+
+/* ==== マップ画面 ==== */
+.map-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background: #222;
+  border-bottom: 2px solid #555;
+}
+.map-header h2 { font-size: 18px; }
+.player-status { display: flex; gap: 20px; font-size: 14px; color: #ffcc00; }
+
+.route-map {
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.station-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  background: #1a1a1a;
+  border-left: 4px solid #555;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 14px;
+}
+.station-row.current {
+  background: #ff6600;
+  color: #000;
+  border-left-color: #ffff00;
+  font-weight: bold;
+  transform: translateX(8px);
+}
+.station-row.defeated {
+  background: #1a3a1a;
+  border-left-color: #00cc00;
+  color: #888;
+  text-decoration: line-through;
+}
+.station-row.locked {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.station-marker {
+  display: inline-block;
+  width: 24px;
+  text-align: center;
+  margin-right: 10px;
+}
+.station-info { flex: 1; }
+.station-enemy { font-size: 12px; color: #ffaa66; margin-top: 2px; }
+.danger-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-left: 6px;
+  vertical-align: middle;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+.danger-badge.low {
+  background: #ff9900;
+  color: #000;
+  border: 1px solid #ffcc66;
+}
+.danger-badge.high {
+  background: #cc0033;
+  color: #fff;
+  border: 1px solid #ff6699;
+  animation: danger-flash 1.2s infinite;
+}
+.danger-badge.gamble {
+  background: linear-gradient(45deg, #aa00cc, #ff00aa);
+  color: #fff;
+  border: 1px solid #ff66ff;
+  animation: gamble-flash 1.5s infinite;
+}
+@keyframes gamble-flash {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.5) saturate(1.5); }
+}
+.rare-enemy {
+  font-size: 11px;
+  color: #ff66cc;
+  margin-top: 2px;
+  padding-left: 8px;
+  font-style: italic;
+}
+.rare-chance {
+  display: inline-block;
+  background: #6a006a;
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  margin-left: 4px;
+}
+.station-row.current .rare-enemy { color: #5a0033; }
+.station-row.defeated .rare-enemy { color: #555; }
+@keyframes danger-flash {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 0, 51, 0.7); }
+  50% { box-shadow: 0 0 8px 2px rgba(255, 0, 51, 0.9); }
+}
+.station-row.current .station-enemy { color: #441100; }
+.station-row.defeated .station-enemy { color: #555; }
+
+.line-divider {
+  padding: 8px 0;
+  color: #888;
+  font-size: 12px;
+  text-align: center;
+  border-top: 1px dashed #444;
+  border-bottom: 1px dashed #444;
+  margin: 4px 0;
+}
+
+.map-controls { padding: 12px; }
+
+/* ==== 戦闘画面 ==== */
+.battle-ui {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  background: #111;
+  border-bottom: 2px solid #444;
+  align-items: center;
+}
+.hp-bar { flex: 1; padding: 0 12px; }
+.hp-label { font-size: 14px; display: block; margin-bottom: 4px; }
+.hp-bar-bg {
+  width: 100%;
+  height: 16px;
+  background: #333;
+  border: 2px solid #666;
+  position: relative;
+}
+.hp-bar-fill {
+  height: 100%;
+  background: linear-gradient(180deg, #66ff00, #00aa00);
+  transition: width 0.3s;
+  width: 100%;
+}
+.hp-bar-fill.enemy {
+  background: linear-gradient(180deg, #ff6666, #aa0000);
+}
+.vs-label { font-size: 28px; font-weight: bold; color: #ff0; padding: 0 16px; }
+
+.battle-stage {
+  flex: 1;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+.battle-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.scene-label {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.6);
+  color: #ffcc00;
+  padding: 4px 14px;
+  font-size: 13px;
+  border: 1px solid #ffcc00;
+  border-radius: 4px;
+  z-index: 3;
+  letter-spacing: 1px;
+}
+.scene-deco {
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+}
+
+.fighter {
+  position: absolute;
+  bottom: 30px;
+  width: 80px;
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: left 0.1s, right 0.1s, transform 0.1s;
+  z-index: 5;
+}
+.fighter.player { left: 80px; }
+.fighter.enemy { right: 80px; transform: scaleX(-1); }
+.fighter .char-head { font-size: 50px; }
+.fighter .char-body {
+  width: 50px;
+  height: 60px;
+  background: #4a90e2;
+  border: 2px solid #000;
+  border-radius: 6px;
+}
+.fighter.player .char-body { background: #4a90e2; }
+.fighter.enemy .char-body { background: #aa3333; }
+.fighter .char-pants {
+  width: 56px;
+  height: 50px;
+  border: 2px solid #000;
+  background: #1a1a1a;
+  border-top: none;
+}
+.fighter.attacking { animation: attack 0.3s; }
+.fighter.hit { animation: hit-shake 0.3s; }
+.fighter.defeated { animation: fall 0.5s forwards; }
+.fighter.pantsless .char-pants { display: none; }
+.fighter.pantsless .char-body {
+  height: 70px;
+  background: linear-gradient(180deg, var(--body, #aa3333) 60%, #ffccaa 60%);
+}
+img.char-sprite {
+  width: 110px;
+  height: auto;
+  max-height: 180px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.fighter.pantsless img.char-sprite {
+  clip-path: inset(0 0 40% 0);
+}
+
+@keyframes attack {
+  0%, 100% { transform: scaleX(-1) translateX(0); }
+  50% { transform: scaleX(-1) translateX(-20px); }
+}
+.fighter.player.attacking {
+  animation-name: attack-p;
+}
+@keyframes attack-p {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(20px); }
+}
+@keyframes hit-shake {
+  0%, 100% { transform: translateX(0); filter: brightness(1); }
+  25% { transform: translateX(-8px); filter: brightness(3) hue-rotate(0deg); }
+  75% { transform: translateX(8px); }
+}
+.fighter.enemy.hit { animation-name: hit-shake-e; }
+@keyframes hit-shake-e {
+  0%, 100% { transform: scaleX(-1) translateX(0); filter: brightness(1); }
+  25% { transform: scaleX(-1) translateX(8px); filter: brightness(3); }
+  75% { transform: scaleX(-1) translateX(-8px); }
+}
+@keyframes fall {
+  to { transform: rotate(-90deg) translateY(60px); opacity: 0.5; }
+}
+.fighter.enemy.defeated { animation-name: fall-e; }
+@keyframes fall-e {
+  to { transform: scaleX(-1) rotate(-90deg) translateY(60px); opacity: 0.5; }
+}
+
+.hit-effect {
+  position: absolute;
+  font-size: 60px;
+  font-weight: bold;
+  color: #ff0;
+  text-shadow: 3px 3px 0 #000;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 10;
+}
+.hit-effect.show {
+  animation: hit-pop 0.5s;
+}
+@keyframes hit-pop {
+  0% { transform: scale(0) rotate(-20deg); opacity: 1; }
+  50% { transform: scale(1.5) rotate(10deg); opacity: 1; }
+  100% { transform: scale(2) rotate(-10deg); opacity: 0; }
+}
+
+.battle-log {
+  height: 60px;
+  background: #000;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: #ffcc66;
+  border-top: 2px solid #444;
+  overflow-y: auto;
+}
+
+.battle-controls {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 10px;
+  background: #222;
+  border-top: 2px solid #555;
+}
+.action-btn {
+  background: #333;
+  color: #fff;
+  border: 2px solid #888;
+  padding: 12px 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  border-radius: 4px;
+}
+.action-btn:hover { background: #555; }
+.action-btn:active { background: #ff6600; }
+.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ==== ボンタン狩り演出 ==== */
+.bontan-cutscene {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+.bontan-title {
+  font-size: 64px;
+  color: #ff0;
+  text-shadow: 4px 4px 0 #c00, 8px 8px 0 #000;
+  letter-spacing: 6px;
+  animation: bontan-shake 0.4s infinite;
+}
+@keyframes bontan-shake {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+.bontan-stage {
+  position: relative;
+  width: 500px;
+  height: 250px;
+  background: linear-gradient(180deg, #ff9966 0%, #ffcc66 70%, #cc6633 70%);
+  border: 4px solid #fff;
+  overflow: hidden;
+}
+.cutscene-char {
+  position: absolute;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.cutscene-char .char-body {
+  width: 60px;
+  height: 80px;
+  border: 3px solid #000;
+}
+.char-underwear { font-size: 40px; }
+#bontan-player { left: 80px; }
+#bontan-victim { right: 80px; }
+.floating-pants {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: 80px;
+  opacity: 0;
+  transition: all 1s;
+}
+.floating-pants.fly {
+  opacity: 1;
+  transform: translate(-50%, -100%) rotate(720deg);
+}
+.bontan-message { font-size: 20px; color: #ffcc00; min-height: 30px; }
+
+/* ==== 敗北 / 勝利画面 ==== */
+.defeat-title { font-size: 60px; color: #f33; text-shadow: 4px 4px 0 #000; margin-bottom: 20px; }
+.defeat-msg { font-size: 18px; margin-bottom: 20px; }
+.defeat-art { font-size: 80px; margin: 30px 0; }
+
+.victory-title {
+  font-size: 60px;
+  color: #ffcc00;
+  text-shadow: 4px 4px 0 #ff6600, 8px 8px 0 #000;
+  margin-bottom: 20px;
+  animation: bontan-shake 0.6s infinite;
+}
+.victory-pants-display {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 600px;
+  margin: 20px;
+  font-size: 32px;
+}
+
+/* ==== 電車移動アニメ画面 ==== */
+.train-cutscene {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  padding: 20px;
+}
+.train-from, .train-to {
+  font-size: 24px;
+  color: #ffcc00;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+.train-distance {
+  color: #888;
+  font-size: 14px;
+}
+.train-track {
+  position: relative;
+  width: 100%;
+  max-width: 750px;
+  height: 200px;
+  background: linear-gradient(180deg, #87ceeb 0%, #b8e0f7 70%, #7a5a3a 70%, #4a3a2a 100%);
+  border: 3px solid #555;
+  overflow: hidden;
+}
+.train-rail {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 25%;
+  height: 4px;
+  background: #888;
+}
+.train-rail.bottom {
+  bottom: 18%;
+  background: #666;
+}
+.train-sprite {
+  position: absolute;
+  left: -200px;
+  bottom: 22%;
+  font-size: 60px;
+  letter-spacing: -10px;
+  z-index: 3;
+  filter: drop-shadow(2px 2px 0 #000);
+}
+.train-sprite.moving {
+  animation: train-cross 2.5s linear forwards;
+}
+@keyframes train-cross {
+  0% { left: -250px; }
+  100% { left: 100%; }
+}
+.train-scenery {
+  position: absolute;
+  bottom: 28%;
+  left: 0;
+  width: 200%;
+  display: flex;
+  justify-content: space-around;
+  font-size: 40px;
+  animation: scenery-scroll 2.5s linear infinite;
+  z-index: 1;
+}
+@keyframes scenery-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ==== ミュートボタン ==== */
+.mute-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 100;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  border: 2px solid #888;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+  cursor: pointer;
+}
+.mute-btn:hover { background: rgba(0,0,0,0.9); border-color: #fff; }
+
+/* ==== レベルアップ表示 ==== */
+.bontan-levelup {
+  font-size: 18px;
+  font-weight: bold;
+  min-height: 26px;
+  letter-spacing: 1px;
+  text-shadow: 2px 2px 0 #000;
+}
